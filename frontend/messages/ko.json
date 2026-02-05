@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "게임레이더 AI - e스포츠 인재 스카우팅",
+    "subtitle": "아시아 전역의 최고 게이밍 인재 발굴",
+    "stats": {
+      "totalPlayers": "총 선수",
+      "regions": "지역",
+      "avgTalent": "평균 재능 점수"
+    },
+    "error": {
+      "title": "플레이어 로드 실패",
+      "retry": "재시도"
+    }
+  },
+  "table": {
+    "nickname": "닉네임",
+    "country": "국가",
+    "game": "게임",
+    "rank": "랭크",
+    "winRate": "승률",
+    "kda": "KDA",
+    "gamesPlayed": "게임 수",
+    "championPool": "챔피언 폭",
+    "topChampion1": "톱 1",
+    "topChampion2": "톱 2",
+    "topChampion3": "톱 3",
+    "c1WinRate": "C1 승률",
+    "c2WinRate": "C2 승률",
+    "talentScore": "재능"
+  },
+  "cards": {
+    "talentScore": "재능",
+    "winRate": "승률",
+    "kda": "KDA",
+    "gamesPlayed": "게임",
+    "champions": "챔피언",
+    "topChampions": "주요 챔피언",
+    "contactWhatsApp": "왓츠앱",
+    "viewProfile": "프로필 보기"
+  }
+}

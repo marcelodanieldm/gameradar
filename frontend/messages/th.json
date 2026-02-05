@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "GameRadar AI - การค้นหาอีสปอร์ตความสามารถ",
+    "subtitle": "ค้นพบผู้เล่นเกมชั้นนำในเอเชีย",
+    "stats": {
+      "totalPlayers": "ผู้เล่นทั้งหมด",
+      "regions": "ภูมิภาค",
+      "avgTalent": "คะแนนความสามารถเฉลี่ย"
+    },
+    "error": {
+      "title": "โหลดผู้เล่นไม่สำเร็จ",
+      "retry": "ลองอีกครั้ง"
+    }
+  },
+  "table": {
+    "nickname": "ชื่อเล่น",
+    "country": "ประเทศ",
+    "game": "เกม",
+    "rank": "อันดับ",
+    "winRate": "อัตราชนะ",
+    "kda": "KDA",
+    "gamesPlayed": "เกม",
+    "championPool": "แชมป์",
+    "topChampion1": "ท็อป 1",
+    "topChampion2": "ท็อป 2",
+    "topChampion3": "ท็อป 3",
+    "c1WinRate": "C1 WR",
+    "c2WinRate": "C2 WR",
+    "talentScore": "ความสามารถ"
+  },
+  "cards": {
+    "talentScore": "ความสามารถ",
+    "winRate": "อัตราชนะ",
+    "kda": "KDA",
+    "gamesPlayed": "เกม",
+    "champions": "แชมป์",
+    "topChampions": "แชมป์หลัก",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "ดูโปรไฟล์"
+  }
+}

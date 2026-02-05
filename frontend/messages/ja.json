@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "GameRadar AI - eスポーツ人材スカウト",
+    "subtitle": "アジアのトップゲーミング人材を発見",
+    "stats": {
+      "totalPlayers": "総プレイヤー",
+      "regions": "地域",
+      "avgTalent": "平均才能スコア"
+    },
+    "error": {
+      "title": "プレイヤーの読み込みに失敗しました",
+      "retry": "再試行"
+    }
+  },
+  "table": {
+    "nickname": "ニックネーム",
+    "country": "国",
+    "game": "ゲーム",
+    "rank": "ランク",
+    "winRate": "勝率",
+    "kda": "KDA",
+    "gamesPlayed": "試合数",
+    "championPool": "チャンピオン",
+    "topChampion1": "トップ1",
+    "topChampion2": "トップ2",
+    "topChampion3": "トップ3",
+    "c1WinRate": "C1勝率",
+    "c2WinRate": "C2勝率",
+    "talentScore": "才能"
+  },
+  "cards": {
+    "talentScore": "才能",
+    "winRate": "勝率",
+    "kda": "KDA",
+    "gamesPlayed": "試合",
+    "champions": "チャンピオン",
+    "topChampions": "主力チャンピオン",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "プロフィールを見る"
+  }
+}

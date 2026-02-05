@@ -1,0 +1,100 @@
+name: 🥷 Ninja E-sports Scraper
+
+on:
+  # Ejecutar cada 6 horas
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+  
+  # Ejecutar en push a main (para testing)
+  push:
+    branches: [ main ]
+    paths:
+      - 'cnn_brasil_scraper.py'
+      - '.github/workflows/ninja_scraper.yml'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  scrape-and-upsert:
+    name: 🥷 Scrape CNN Brasil & Upsert to Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🎭 Install Playwright browsers
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
+      
+      - name: 🔧 Setup environment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_TABLE_NAME: ${{ secrets.AIRTABLE_TABLE_NAME }}
+        run: |
+          # Crear archivo .env desde secrets
+          echo "SUPABASE_URL=${SUPABASE_URL}" >> .env
+          echo "SUPABASE_KEY=${SUPABASE_KEY}" >> .env
+          echo "AIRTABLE_API_KEY=${AIRTABLE_API_KEY}" >> .env
+          echo "AIRTABLE_BASE_ID=${AIRTABLE_BASE_ID}" >> .env
+          echo "AIRTABLE_TABLE_NAME=${AIRTABLE_TABLE_NAME}" >> .env
+          echo "RATE_LIMIT_DELAY=1" >> .env
+          echo "MAX_CONCURRENT_REQUESTS=3" >> .env
+          echo "LOG_LEVEL=ERROR" >> .env
+      
+      - name: 🥷 Run Ninja Scraper
+        id: scraper
+        run: |
+          python cnn_brasil_scraper.py
+        continue-on-error: true
+      
+      - name: 📊 Report Results
+        if: always()
+        run: |
+          echo "### 🥷 Ninja Scraper Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scraped**: ${{ steps.scraper.outputs.scraped || 0 }} players" >> $GITHUB_STEP_SUMMARY
+          echo "- **Errors**: ${{ steps.scraper.outputs.errors || 0 }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration**: ${{ steps.scraper.outputs.duration || 0 }}s" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+      
+      - name: 📤 Upload logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-logs
+          path: |
+            ninja_scraper.log
+            *.log
+          retention-days: 7
+      
+      - name: 🔔 Notify on failure (opcional)
+        if: failure()
+        run: |
+          echo "⚠️ Scraper failed - check logs"
+          # Aquí puedes añadir notificaciones (Slack, Discord, etc)
+          
+      - name: ✅ Success
+        if: success()
+        run: |
+          echo "✅ Ninja scraper completed successfully!"

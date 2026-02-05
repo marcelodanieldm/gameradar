@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "गेमरडार AI - ई-स्पोर्ट्स प्रतिभा खोज",
+    "subtitle": "एशिया में शीर्ष गेमिंग प्रतिभा की खोज करें",
+    "stats": {
+      "totalPlayers": "कुल खिलाड़ी",
+      "regions": "क्षेत्र",
+      "avgTalent": "औसत प्रतिभा स्कोर"
+    },
+    "error": {
+      "title": "खिलाड़ी लोड करने में विफल",
+      "retry": "पुनः प्रयास करें"
+    }
+  },
+  "table": {
+    "nickname": "उपनाम",
+    "country": "देश",
+    "game": "खेल",
+    "rank": "रैंक",
+    "winRate": "जीत दर",
+    "kda": "KDA",
+    "gamesPlayed": "खेल",
+    "championPool": "चैंपियन",
+    "topChampion1": "शीर्ष 1",
+    "topChampion2": "शीर्ष 2",
+    "topChampion3": "शीर्ष 3",
+    "c1WinRate": "C1 जीत",
+    "c2WinRate": "C2 जीत",
+    "talentScore": "प्रतिभा"
+  },
+  "cards": {
+    "talentScore": "प्रतिभा",
+    "winRate": "जीत दर",
+    "kda": "KDA",
+    "gamesPlayed": "खेल",
+    "champions": "चैंपियन",
+    "topChampions": "शीर्ष चैंपियन",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "प्रोफ़ाइल देखें"
+  }
+}

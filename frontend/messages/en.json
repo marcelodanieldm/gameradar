@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "GameRadar AI - E-Sports Talent Scouting",
+    "subtitle": "Discover top gaming talent across Asia",
+    "stats": {
+      "totalPlayers": "Total Players",
+      "regions": "Regions",
+      "avgTalent": "Avg Talent Score"
+    },
+    "error": {
+      "title": "Failed to load players",
+      "retry": "Retry"
+    }
+  },
+  "table": {
+    "nickname": "Nickname",
+    "country": "Country",
+    "game": "Game",
+    "rank": "Rank",
+    "winRate": "Win Rate",
+    "kda": "KDA",
+    "gamesPlayed": "Games",
+    "championPool": "Pool",
+    "topChampion1": "Top 1",
+    "topChampion2": "Top 2",
+    "topChampion3": "Top 3",
+    "c1WinRate": "C1 WR",
+    "c2WinRate": "C2 WR",
+    "talentScore": "Talent"
+  },
+  "cards": {
+    "talentScore": "Talent",
+    "winRate": "Win Rate",
+    "kda": "KDA",
+    "gamesPlayed": "Games",
+    "champions": "Champions",
+    "topChampions": "Top Champions",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "View Profile"
+  }
+}

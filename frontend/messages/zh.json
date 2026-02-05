@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "游戏雷达 AI - 电竞人才发掘",
+    "subtitle": "发现亚洲顶尖游戏人才",
+    "stats": {
+      "totalPlayers": "总选手",
+      "regions": "地区",
+      "avgTalent": "平均天赋分"
+    },
+    "error": {
+      "title": "加载选手失败",
+      "retry": "重试"
+    }
+  },
+  "table": {
+    "nickname": "昵称",
+    "country": "国家",
+    "game": "游戏",
+    "rank": "段位",
+    "winRate": "胜率",
+    "kda": "KDA",
+    "gamesPlayed": "场次",
+    "championPool": "英雄池",
+    "topChampion1": "主力1",
+    "topChampion2": "主力2",
+    "topChampion3": "主力3",
+    "c1WinRate": "C1胜率",
+    "c2WinRate": "C2胜率",
+    "talentScore": "天赋"
+  },
+  "cards": {
+    "talentScore": "天赋",
+    "winRate": "胜率",
+    "kda": "KDA",
+    "gamesPlayed": "场次",
+    "champions": "英雄",
+    "topChampions": "主力英雄",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "查看资料"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "GameRadar AI - Tìm Kiếm Tài Năng E-Sports",
+    "subtitle": "Khám phá tài năng game hàng đầu châu Á",
+    "stats": {
+      "totalPlayers": "Tổng Người Chơi",
+      "regions": "Khu Vực",
+      "avgTalent": "Điểm Tài Năng TB"
+    },
+    "error": {
+      "title": "Không thể tải người chơi",
+      "retry": "Thử lại"
+    }
+  },
+  "table": {
+    "nickname": "Biệt Danh",
+    "country": "Quốc Gia",
+    "game": "Trò Chơi",
+    "rank": "Xếp Hạng",
+    "winRate": "Tỷ Lệ Thắng",
+    "kda": "KDA",
+    "gamesPlayed": "Số Trận",
+    "championPool": "Tướng",
+    "topChampion1": "Top 1",
+    "topChampion2": "Top 2",
+    "topChampion3": "Top 3",
+    "c1WinRate": "C1 WR",
+    "c2WinRate": "C2 WR",
+    "talentScore": "Tài Năng"
+  },
+  "cards": {
+    "talentScore": "Tài Năng",
+    "winRate": "Tỷ Lệ Thắng",
+    "kda": "KDA",
+    "gamesPlayed": "Trận",
+    "champions": "Tướng",
+    "topChampions": "Tướng Chính",
+    "contactWhatsApp": "WhatsApp",
+    "viewProfile": "Xem Hồ Sơ"
+  }
+}

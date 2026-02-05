@@ -1,0 +1,30 @@
+# GameRadar AI - Dependencies
+# Core
+python-dotenv==1.0.0
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# Async & Web Scraping
+playwright==1.41.2
+aiohttp==3.9.3
+asyncio==3.4.3
+
+# Database
+supabase==2.3.4
+psycopg2-binary==2.9.9
+
+# Airtable Integration
+pyairtable==2.3.3
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+
+# Utilities
+httpx==0.26.0
+tenacity==8.2.3
+loguru==0.7.2
+
+# Proxy Services (opcional)
+# bright-data==1.0.0
+# scraperapi-sdk==1.0.0
