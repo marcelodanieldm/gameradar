@@ -52,17 +52,25 @@ gameradar/
 ├── config.py                    # Configuración centralizada
 ├── country_detector.py          # Detección de país por bandera/servidor
 ├── scrapers.py                  # Scrapers para Liquipedia, OP.GG, etc
+├── bronze_ingestion.py          # 📦 Motor de ingesta Bronze (multi-fuente)
 ├── cnn_brasil_scraper.py        # 🥷 Ninja scraper para CNN Brasil
 ├── proxy_rotator.py             # Sistema de rotación de proxies
 ├── supabase_client.py           # Cliente de Supabase (Bronze/Silver/Gold)
 ├── airtable_client.py           # Cliente de Airtable
 ├── pipeline.py                  # Orquestación del flujo completo
-├── database_schema.sql          # Esquema SQL de Supabase
+├── database_schema.sql          # Esquema SQL de Supabase (Bronze/Silver/Gold)
+├── gold_analytics.sql           # 📊 Analytics Layer - GameRadar Score avanzado
 ├── test_ninja_scraper.py        # Tests del scraper ninja
 ├── requirements.txt             # Dependencias Python
 ├── .env.example                 # Ejemplo de variables de entorno
 ├── .github/workflows/
-│   └── ninja_scraper.yml        # GitHub Actions workflow
+│   ├── ninja_scraper.yml        # GitHub Actions workflow (CNN Brasil)
+│   └── ingest.yml               # 🚀 Orquestador de ingesta automática (cada 6h)
+├── frontend/
+│   ├── components/
+│   │   ├── TransculturalDashboard.tsx  # Dashboard adaptativo
+│   │   └── PlayerCard.tsx       # 🎨 UX Cultural (Mobile vs Technical)
+│   └── package.json             # Dependencias Next.js
 ├── README.md                    # Esta documentación
 └── NINJA_SCRAPER.md            # 🥷 Guía del Ninja Scraper
 ```
@@ -100,7 +108,22 @@ RATE_LIMIT_DELAY=2
 MAX_CONCURRENT_REQUESTS=5
 ```
 
-### 4. Crear el Schema en Supabase
+### 4. Crear los Schemas en Supabase
+
+#### Bronze/Silver/Gold Schema
+
+Ejecutar el script `database_schema.sql` en el SQL Editor de Supabase (crea tablas base y triggers).
+
+#### Analytics Layer (Gold)
+
+Ejecutar el script `gold_analytics.sql` para:
+- ✅ Tabla `gold_analytics` con componentes de score desglosados
+- ✅ Función `calculate_gameradar_score_advanced()` con lógica regional
+- ✅ Función `refresh_gold_analytics()` para recálculo diario
+- ✅ Vistas analíticas (top players, breakdown regional)
+- ✅ Trigger de auto-actualización desde Silver
+
+### 5. Crear el Schema en Supabase (Original)
 
 Ejecutar el script `database_schema.sql` en el SQL Editor de Supabase:
 
@@ -116,7 +139,85 @@ Esto creará:
 - ✅ Vistas de estadísticas por región
 - ✅ Row Level Security (RLS)
 
-## 💻 Uso del Sistema
+## � Motor de Ingesta Bronze
+
+### Script de Ingesta Automática
+
+El sistema incluye `bronze_ingestion.py` - un scraper robusto diseñado para ingesta masiva:
+
+**Características:**
+- ✅ Playwright asíncrono con anti-detección
+- ✅ Detección automática de caracteres asiáticos (Hangul, CJK, Hiragana/Katakana)
+- ✅ Manejo de errores no-bloqueante (continúa si falla un jugador)
+- ✅ Soporte multi-fuente (Liquipedia, OP.GG)
+- ✅ Integración directa con Supabase Bronze layer
+- ✅ Logging detallado con estadísticas
+
+**Uso:**
+
+```python
+import asyncio
+from bronze_ingestion import BronzeIngestionScraper
+
+async def main():
+    async with BronzeIngestionScraper(region="KR") as scraper:
+        await scraper.run_ingestion(
+            source="liquipedia",  # o "opgg"
+            game="leagueoflegends",
+            limit=50
+        )
+
+asyncio.run(main())
+```
+
+**Salida:**
+```
+🚀 INICIANDO INGESTA BRONZE
+   Region: KR
+   Source: liquipedia
+   Game: leagueoflegends
+📄 Scraping Liquipedia: https://liquipedia.net/leagueoflegends/Portal:Players
+📊 Procesando 150 filas de la tabla
+✓ Scraped 50 jugadores de Liquipedia
+💾 Insertando 50 registros en Bronze...
+✓ Insertados 50/50 registros en Bronze
+✅ INGESTA COMPLETADA
+📊 Resumen:
+  - Scraped: 50
+  - Insertados en Bronze: 50
+  - Errores (no críticos): 0
+  - Tasa de éxito: 100.0%
+```
+
+### GitHub Actions - Orquestador Automático
+
+El archivo `.github/workflows/ingest.yml` ejecuta el scraper cada 6 horas:
+
+**Características:**
+- ✅ Ejecución automática (00:00, 06:00, 12:00, 18:00 UTC)
+- ✅ Ejecución manual con parámetros configurables
+- ✅ Multi-región en paralelo (KR, IN, VN, CN)
+- ✅ CNN Brasil Ninja Scraper en job separado
+- ✅ Fail-safe (continúa con otras regiones si una falla)
+- ✅ Logs automáticos descargables
+- ✅ Resumen ejecutivo con enlaces
+
+**Setup:**
+
+1. Configurar Secrets en GitHub:
+   - `SUPABASE_URL`: Tu URL de Supabase
+   - `SUPABASE_KEY`: Tu service role key
+   - `PROXY_URL` (opcional): Para proxies rotativos
+
+2. El workflow se ejecuta automáticamente cada 6 horas
+
+3. Ejecutar manualmente:
+   - `Actions` → `GameRadar AI Ingestion Engine` → `Run workflow`
+   - Elegir región, fuente, y límite
+
+**Costo:** ✅ 100% GRATIS con GitHub Actions (2,000 min/mes en repos públicos)
+
+## �💻 Uso del Sistema
 
 ### Ejemplo 1: Scrapear jugadores de OP.GG Korea
 
@@ -199,6 +300,140 @@ profile = PlayerProfile(
 airtable.send_player(profile)
 ```
 
+## 📊 Analytics Layer (Gold)
+
+### Sistema de GameRadar Score Avanzado
+
+El archivo `gold_analytics.sql` implementa un sistema completo de analytics con lógica regional:
+
+**Función Principal: `calculate_gameradar_score_advanced()`**
+
+```sql
+SELECT * FROM calculate_gameradar_score_advanced(
+    65.5,  -- win_rate
+    4.2,   -- kda
+    500,   -- games_played
+    'KR',  -- region
+    85.0   -- talent_score (opcional)
+);
+
+-- Resultado:
+-- gameradar_score: 89.50
+-- winrate_component: 26.20 (40%)
+-- kda_component: 12.60 (30% para KR)
+-- volume_component: 6.20 (10% para KR)
+-- regional_multiplier: 1.20 (bonus Korea)
+```
+
+**Lógica Regional Implementada:**
+
+| Región | Win Rate | KDA | Volume | Multiplier | Razón |
+|--------|----------|-----|--------|------------|-------|
+| **KR** | 40% | 30% | 10% | 1.20x | Alta competencia |
+| **CN** | 40% | 30% | 10% | 1.15x | Alta competencia |
+| **IN/VN/TH** | 40% | 15% | 30% | 1.0x | Priorizan grinders |
+| **NA/EU/BR** | 40% | 30% | 10% | 1.05x | Competencia estándar |
+
+**Características:**
+- ✅ **Auto-actualización**: Trigger en `silver_players` → calcula automáticamente en `gold_analytics`
+- ✅ **Histórico diario**: Campo `calculation_date` para tracking temporal
+- ✅ **Transparencia**: Guarda desglose de cada componente
+- ✅ **Normalización logarítmica**: Primeras partidas valen más (volumen)
+- ✅ **Performance**: Índices en score, región, fecha
+
+**Funciones de Consulta:**
+
+```sql
+-- Refrescar analytics manualmente
+SELECT * FROM refresh_gold_analytics();
+-- Retorna: players_processed, execution_time_ms
+
+-- Ver top 100 global
+SELECT * FROM vw_top_players_global;
+
+-- Ver breakdown por región
+SELECT * FROM vw_regional_score_breakdown;
+
+-- Buscar score de jugador específico
+SELECT * FROM get_player_score('faker_t1');
+-- Retorna: nickname, gameradar_score, global_rank, regional_rank
+```
+
+**Programación Diaria:**
+
+```sql
+-- Opción 1: pg_cron (si tienes acceso superuser)
+CREATE EXTENSION pg_cron;
+SELECT cron.schedule(
+    'refresh-analytics',
+    '0 2 * * *',  -- 02:00 AM diario
+    'SELECT refresh_gold_analytics();'
+);
+
+-- Opción 2: GitHub Actions (recomendado)
+-- Agregar job en .github/workflows/analytics.yml
+```
+
+## 🎨 Frontend - UX Cultural
+
+### PlayerCard Component
+
+Componente React/Next.js con diseño dual adaptativo según región:
+
+**Mobile-Heavy Card (India/Vietnam/Thailand):**
+- ✅ Tarjeta táctil grande (responsive touch)
+- ✅ Avatar 96px con score flotante
+- ✅ Fuentes grandes con `font-devanagari` (Hindi/Vietnamita)
+- ✅ Botón WhatsApp brillante (share pre-formateado)
+- ✅ Stats grid con iconos coloridos
+- ✅ Gradientes animados (purple/cyan/green)
+- ✅ Hover/active feedback táctil
+
+**Technical Card (Korea/Japan/China):**
+- ✅ Layout minimalista tipo tabla
+- ✅ Avatar compacto 48px
+- ✅ Fuentes CJK optimizadas (`font-cjk`)
+- ✅ Stats en formato grid compacto
+- ✅ Colores sobrios (slate/cyan)
+- ✅ Acciones minimalistas en footer
+
+**Uso:**
+
+```tsx
+import PlayerCard from '@/components/PlayerCard';
+
+<PlayerCard
+  player_id="faker_t1"
+  nickname="Faker"
+  real_name="이상혁"
+  country_code="KR"
+  region="KR"
+  game="LOL"
+  rank="Challenger"
+  avatar_url="https://..."
+  profile_url="https://..."
+  stats={{
+    win_rate: 65.5,
+    kda: 4.2,
+    games_played: 500,
+    talent_score: 95,
+    gameradar_score: 98,
+    main_role: "Mid",
+    top_champions: ["Azir", "LeBlanc", "Orianna"]
+  }}
+  is_mobile_heavy={false}  // false = Technical, true = Mobile-Heavy
+  is_verified={true}
+/>
+```
+
+**Features:**
+- ✅ WhatsApp Share nativo con mensaje pre-formateado
+- ✅ Share API nativa (fallback)
+- ✅ Copy ID con feedback visual
+- ✅ Gradientes animados (e-sports vibe)
+- ✅ Performance optimizado (sin re-renders)
+- ✅ Accessibility completo
+
 ## 🌍 Soporte Unicode
 
 El sistema soporta completamente caracteres Unicode para:
@@ -250,6 +485,7 @@ PlayerProfile(
 
 | Scraper | Región | Juegos | Status |
 |---------|--------|--------|--------|
+| **Bronze Ingestion** 📦 | Multi-región | LOL | ✅ Producción |
 | **OP.GG** | KR, VN | League of Legends | ✅ Implementado |
 | **Liquipedia** | India, SEA | LOL, Dota2, CSGO | ✅ Implementado |
 | **CNN Brasil** 🥷 | Global | E-sports | ✅ Ninja Mode |
@@ -279,19 +515,33 @@ gold_verified_players -- Datos verificados
 
 ### Funciones SQL
 
+**Schema Base (database_schema.sql):**
 - `normalize_bronze_to_silver()`: Normalización automática
 - `calculate_talent_score()`: Calcula score 0-100
-- `calculate_gameradar_score()`: **GameRadar Score con precisión matemática**
-  - **WinRate 40%**: Componente directo del porcentaje de victorias
-  - **KDA 30%**: Normalizado (KDA × 20, máximo 100)
-  - **Región 30%**: Multiplicador de dificultad (Corea=1.2, India=1.0)
-  - **Resultado**: Escala 0-100, persiste automáticamente en Gold layer
+- `calculate_gameradar_score()`: GameRadar Score básico (WinRate 40%, KDA 30%, Región 30%)
 - `update_updated_at_column()`: Mantiene timestamps
+
+**Analytics Layer (gold_analytics.sql):**
+- `calculate_gameradar_score_advanced()`: **Score avanzado con lógica regional**
+  - **WinRate 40%**: Componente directo del porcentaje de victorias
+  - **KDA Variable**: 30% (KR/CN/JP) o 15% (IN/VN/TH)
+  - **Volume Variable**: 10% (KR/CN/JP) o 30% (IN/VN/TH) - priorizan grinders
+  - **Talent Score 20%**: Bonus basado en talent_score existente
+  - **Regional Multiplier**: KR=1.2x, CN=1.15x, JP=1.1x, IN/VN/TH=1.0x
+  - **Retorna**: Score + desglose de componentes para transparencia
+- `refresh_gold_analytics()`: Recalcula toda la tabla gold_analytics desde silver_players
+- `get_player_score(player_id)`: Obtiene score + rankings global/regional
 
 ### Vistas
 
+**Schema Base:**
 - `vw_top_players_by_country`: Ranking por país
 - `vw_stats_by_region`: Estadísticas agregadas
+
+**Analytics Layer:**
+- `vw_top_players_global`: Top 100 jugadores globales por GameRadar Score
+- `vw_top_players_by_region`: Rankings regionales con rank_in_region
+- `vw_regional_score_breakdown`: Comparación de componentes de score por región
 
 ## 🔐 Seguridad
 
@@ -326,13 +576,19 @@ logger.add("debug.log", level="DEBUG", rotation="10 MB")
 
 ## 🎯 Roadmap
 
+- [x] **Motor de Ingesta Bronze** - Scraper robusto multi-fuente implementado
+- [x] **GitHub Actions Automation** - Orquestador cada 6 horas (gratis)
+- [x] **GameRadar Score Básico** - Lógica de negocio implementada (WinRate+KDA+Región)
+- [x] **GameRadar Score Avanzado** - Analytics Layer con lógica regional variable
+- [x] **Frontend UX Cultural** - PlayerCard adaptativo (Mobile vs Technical)
+- [x] **Transcultural Dashboard** - Consume silver_players con UI adaptativa
+- [ ] Dashboard web completo con visualizaciones (Next.js - en progreso)
 - [ ] Soporte para Valorant
 - [ ] Scraper de Dotabuff
 - [ ] Machine Learning para predicción de talento
-- [x] **GameRadar Score** - Lógica de negocio implementada (WinRate+KDA+Región)
-- [ ] Dashboard web con visualizaciones (Next.js - en progreso)
 - [ ] API REST pública
 - [ ] Webhooks para actualizaciones en tiempo real
+- [ ] Sistema de notificaciones (WhatsApp/Email)
 
 ## 📞 Soporte
 
