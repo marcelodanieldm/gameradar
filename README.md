@@ -7,12 +7,15 @@ GameRadar AI es un sistema de ingesta masiva y scouting de jugadores de e-sports
 ## 🏗️ Arquitectura
 
 ### Stack Tecnológico
-- **Backend**: Python 3.9+
+- **Backend**: Python 3.11+
 - **Web Scraping**: Playwright (asíncrono)
 - **Validación**: Pydantic con soporte Unicode
 - **Base de Datos**: Supabase (PostgreSQL)
 - **Integración**: Airtable API
 - **Logging**: Loguru
+- **Testing**: Playwright + Pytest (28 tests E2E)
+- **Frontend**: Next.js 14, React 18, TypeScript 5.3, Tailwind CSS
+- **CI/CD**: GitHub Actions (automation + testing)
 
 ### Arquitectura de Datos (Medallion)
 
@@ -61,6 +64,8 @@ gameradar/
 ├── database_schema.sql          # Esquema SQL de Supabase (Bronze/Silver/Gold)
 ├── gold_analytics.sql           # 📊 Analytics Layer - GameRadar Score avanzado
 ├── test_ninja_scraper.py        # Tests del scraper ninja
+├── test_e2e_playwright.py       # 🧪 Tests E2E backend (11 tests)
+├── conftest.py                  # Configuración de pytest
 ├── requirements.txt             # Dependencias Python
 ├── .env.example                 # Ejemplo de variables de entorno
 ├── .github/workflows/
@@ -70,9 +75,14 @@ gameradar/
 │   ├── components/
 │   │   ├── TransculturalDashboard.tsx  # Dashboard adaptativo
 │   │   └── PlayerCard.tsx       # 🎨 UX Cultural (Mobile vs Technical)
-│   └── package.json             # Dependencias Next.js
+│   ├── tests/
+│   │   └── e2e.spec.ts          # 🧪 Tests E2E frontend (17 tests)
+│   ├── playwright.config.ts     # Configuración de Playwright
+│   ├── package.json             # Dependencias Next.js
+│   └── package.test.json        # Scripts de testing
 ├── README.md                    # Esta documentación
-└── NINJA_SCRAPER.md            # 🥷 Guía del Ninja Scraper
+├── NINJA_SCRAPER.md            # 🥷 Guía del Ninja Scraper
+└── E2E_TESTS.md                # 🧪 Guía de Tests E2E
 ```
 
 ## 🚀 Setup Inicial
@@ -574,6 +584,89 @@ logger.add("debug.log", level="DEBUG", rotation="10 MB")
 - Índices GIN en JSONB para búsqueda rápida
 - Búsqueda difusa con pg_trgm
 
+## 🧪 Testing
+
+### Suite de Tests E2E con Playwright
+
+GameRadar AI incluye **28 tests end-to-end** que validan todas las funcionalidades:
+
+#### Backend Tests (Python)
+
+**Archivo**: `test_e2e_playwright.py` - **11 tests**
+
+```bash
+# Instalar dependencias
+pip install pytest pytest-asyncio
+playwright install chromium
+
+# Ejecutar tests
+python test_e2e_playwright.py
+```
+
+**Coverage:**
+- ✅ Bronze Ingestion (Liquipedia + OP.GG)
+- ✅ Country Detection (bandera, servidor, URL, texto)
+- ✅ Supabase Integration (Bronze → Silver → Gold)
+- ✅ Asian Character Detection (Coreano/Chino/Japonés)
+- ✅ Error Handling no-bloqueante
+- ✅ Search & Queries
+- ✅ Performance (<30s)
+
+#### Frontend Tests (TypeScript)
+
+**Archivo**: `frontend/tests/e2e.spec.ts` - **17 tests**
+
+```bash
+cd frontend
+npm install --save-dev @playwright/test
+npx playwright install
+
+# Ejecutar tests
+npm run test:e2e              # Headless
+npm run test:e2e:headed       # Con navegador visible
+npm run test:e2e:ui           # Modo interactivo
+npm run test:e2e:debug        # Debug mode
+```
+
+**Coverage:**
+- ✅ Dashboard rendering & stats cards
+- ✅ PlayerCard adaptativo (Mobile-Heavy vs Technical)
+- ✅ View mode toggle (Auto/Cards/Table)
+- ✅ Region filter & sorting
+- ✅ Responsive design (Desktop/Tablet/Mobile)
+- ✅ Dark mode
+- ✅ Loading & error states
+- ✅ Accessibility (keyboard, alt text)
+- ✅ Performance (<5s load time)
+- ✅ Supabase data fetching
+
+**Tests Multi-Browser:**
+- Chromium (Desktop + Mobile)
+- Firefox
+- WebKit (Safari)
+- Microsoft Edge
+
+### Resultados Esperados
+
+```bash
+# Backend
+==============================================================
+🚀 GAMERADAR AI - E2E TESTS
+==============================================================
+✅ Passed: 11/11
+❌ Failed: 0/11
+==============================================================
+
+# Frontend
+Running 17 tests using 4 workers
+  ✓ [chromium] › Dashboard debe renderizar correctamente
+  ✓ [chromium] › Stats cards deben mostrar datos
+  ...
+  17 passed (45s)
+```
+
+**Documentación completa**: Ver [E2E_TESTS.md](E2E_TESTS.md)
+
 ## 🎯 Roadmap
 
 - [x] **Motor de Ingesta Bronze** - Scraper robusto multi-fuente implementado
@@ -582,6 +675,7 @@ logger.add("debug.log", level="DEBUG", rotation="10 MB")
 - [x] **GameRadar Score Avanzado** - Analytics Layer con lógica regional variable
 - [x] **Frontend UX Cultural** - PlayerCard adaptativo (Mobile vs Technical)
 - [x] **Transcultural Dashboard** - Consume silver_players con UI adaptativa
+- [x] **E2E Tests** - 28 tests con Playwright (Backend + Frontend)
 - [ ] Dashboard web completo con visualizaciones (Next.js - en progreso)
 - [ ] Soporte para Valorant
 - [ ] Scraper de Dotabuff
