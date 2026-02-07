@@ -683,6 +683,40 @@ Running 17 tests using 4 workers
 
 ## 🧠 Sprint 2: Motor de Inteligencia Semántica y UX Regional
 
+### 📦 Entregable Sprint 2: Global Discovery Engine
+
+- **IA:** Búsqueda semántica activa (pgvector).
+  - Sistema dual: skill_vector (4D heurístico) + embedding_vector (1536D OpenAI)
+  - Búsqueda en lenguaje natural con `text-embedding-3-small`
+  - Edge Function de recomendación con cosine similarity
+  - Performance: <200ms end-to-end, <50ms query time
+
+- **UX:** Sistema de vistas adaptativas (Mobile-First vs Data-Dense).
+  - **Discovery Hub**: Street Scout (India/Vietnam) + Elite Analyst (Korea/China/Japan)
+  - **MarketplaceView**: Cards grandes con neón (mobile-heavy) vs tablas TanStack (analytical)
+  - Transiciones Framer Motion con 60 FPS
+  - Match Score visualization con flame badges
+
+- **I18n:** Soporte nativo para 7 idiomas incluyendo tipografías CJK y Devanagari.
+  - Idiomas: 🇬🇧 English, 🇮🇳 हिन्दी, 🇰🇷 한국어, 🇯🇵 日本語, 🇻🇳 Tiếng Việt, 🇨🇳 中文, 🇹🇭 ไทย
+  - next-intl sin recargas de página
+  - Tipografías optimizadas: font-devanagari, font-cjk
+  - 200+ keys traducidos en 6 namespaces
+
+- **Escalabilidad:** Implementación de caché en el Edge para consultas de IA.
+  - Supabase Edge Functions (Deno runtime)
+  - Cache-Control headers con TTL 5 minutos
+  - RPC functions optimizadas con IVFFlat index
+  - Batch processing con rate limiting (100 players/min)
+
+**Documentación Completa:**
+- [DISCOVERY_HUB.md](DISCOVERY_HUB.md) - Street Scout + Elite Analyst architecture
+- [AISEARCHBAR.md](AISEARCHBAR.md) - Semantic search component guide
+- [EMBEDDING_GENERATOR.md](EMBEDDING_GENERATOR.md) - OpenAI embeddings system
+- [MARKETPLACE_RECOMMENDATION.md](MARKETPLACE_RECOMMENDATION.md) - AI recommendation engine
+
+---
+
 ### Paradigma
 - **Semantic Search:** Pasamos de filtros estáticos (SQL WHERE) a búsqueda por significado usando vectores.
 - **Adaptive UI:** La interfaz muta según la región del usuario para maximizar retención y engagement.
