@@ -772,6 +772,116 @@ FROM search_similar_players(
 
 ---
 
+#### 1.5. Motor de Embeddings Semánticos (OpenAI)
+
+**⚡ Upgrade: De heurísticas a IA generativa**
+
+Mientras que `skill_vector` (4D) usa heurísticas matemáticas, el nuevo sistema de embeddings usa modelos de lenguaje para búsqueda semántica de alto nivel.
+
+**Tecnologías:**
+- OpenAI `text-embedding-3-small` (1536 dimensiones)
+- PostgreSQL pgvector con `embedding_vector vector(1536)`
+- Procesamiento en batches con rate limiting
+
+**Arquitectura:**
+
+```
+┌──────────────────────────────────────┐
+│  silver_players                      │
+│  ├─ nickname, country, rank          │
+│  ├─ kda, win_rate                    │
+│  └─ top_champions                    │
+└──────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────┐
+│  embedding_generator.py              │
+│  ├─ Genera descripción natural       │
+│  │   "Jugador de LOL en KR con       │
+│  │    5.2 KDA y 62% WR en            │
+│  │    Challenger. Nickname: Faker"   │
+│  ├─ OpenAI embeddings (1536D)        │
+│  └─ Procesamiento en batches         │
+└──────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────┐
+│  gold_analytics                      │
+│  ├─ embedding_vector vector(1536)    │
+│  ├─ idx_gold_embedding_vector        │
+│  └─ match_players()                  │
+└──────────────────────────────────────┘
+```
+
+**Uso del Generador:**
+
+```bash
+# 1. Instalar dependencias
+pip install openai==1.12.0
+
+# 2. Configurar API Key en .env
+OPENAI_API_KEY=sk-your-api-key-here
+
+# 3. Generar embeddings para jugadores sin vector
+python embedding_generator.py --limit 500
+
+# 4. Filtrar por región/juego
+python embedding_generator.py --country KR --game LOL --limit 100
+
+# 5. Modo dry-run (testing)
+python embedding_generator.py --dry-run --limit 10
+
+# 6. Ajustar batch size (rate limits)
+python embedding_generator.py --batch-size 20 --limit 1000
+```
+
+**Búsqueda Semántica:**
+
+```sql
+-- Primero, convertir consulta natural a embedding (en backend)
+-- "jugadores agresivos de Corea con alto KDA"
+-- → [0.123, 0.456, ..., 0.789] (1536 dimensiones)
+
+-- Buscar jugadores similares
+SELECT 
+    player_id,
+    handle,
+    gameradar_score,
+    similarity
+FROM match_players(
+    query_embedding := '[0.123, 0.456, ...]'::vector(1536),
+    match_threshold := 0.7,      -- Similitud mínima (0-1)
+    match_count := 20,            -- Máximo de resultados
+    region_filter := 'KR'         -- Filtro opcional por región
+);
+```
+
+**Comparación: skill_vector vs embedding_vector**
+
+| Característica | skill_vector (4D) | embedding_vector (1536D) |
+|----------------|-------------------|--------------------------|
+| **Dimensiones** | 4 | 1536 |
+| **Método** | Heurísticas matemáticas | Modelo de lenguaje (OpenAI) |
+| **Costo** | ✅ Gratis | 💰 ~$0.001/1000 jugadores |
+| **Uso** | Similitud de stats | Búsqueda en lenguaje natural |
+| **Velocidad** | ⚡ Muy rápido | 🐢 Más lento (API calls) |
+| **Precisión** | 📊 Numérica | 🧠 Semántica |
+| **Ejemplo Query** | `[0.5, 0.7, 0.3, 0.8]` | "jugadores agresivos con alto KDA" |
+
+**Costos Estimados (OpenAI):**
+- Precio: $0.02 por 1M tokens
+- ~50 tokens por jugador
+- **1,000 jugadores**: ~$0.001 USD
+- **100,000 jugadores**: ~$0.10 USD
+- **1M jugadores**: ~$1.00 USD
+
+**Performance:**
+- Batch size: 50 jugadores por request
+- Rate limit delay: 0.5s entre batches
+- Throughput: ~100 jugadores/minuto (~6000/hora)
+
+**Para más detalles:** Ver [EMBEDDING_GENERATOR.md](EMBEDDING_GENERATOR.md)
+
+---
+
 #### 2. UX Regional Adaptativa (3 Vistas)
 
 **Hook de Detección:** `useCountryDetection()`

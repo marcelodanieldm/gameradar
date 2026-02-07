@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS gold_analytics (
     -- Dimensiones: [kda, winrate, agresividad, versatilidad]
     skill_vector vector(4),
     
+    -- Vector de embeddings semánticos (1536 dimensiones)
+    -- Para búsqueda semántica basada en lenguaje natural (OpenAI, etc.)
+    embedding_vector vector(1536),
+    
     -- Componentes del score (para transparencia)
     winrate_component DECIMAL(5,2),
     kda_component DECIMAL(5,2),
@@ -49,6 +53,9 @@ CREATE INDEX IF NOT EXISTS idx_gold_calculation_date ON gold_analytics(calculati
 CREATE INDEX IF NOT EXISTS idx_gold_player_id ON gold_analytics(player_id);
 CREATE INDEX IF NOT EXISTS idx_gold_skill_vector
     ON gold_analytics USING ivfflat (skill_vector vector_cosine_ops)
+    WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_gold_embedding_vector
+    ON gold_analytics USING ivfflat (embedding_vector vector_cosine_ops)
     WITH (lists = 100);
 
 -- ============================================================
@@ -387,6 +394,40 @@ BEGIN
       AND (p_game IS NULL OR ga.game = p_game)
     ORDER BY ga.skill_vector <=> p_query_vector
     LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ============================================================
+-- FUNCIÓN: match_players
+-- Búsqueda semántica con embeddings de alta dimensión (1536D)
+-- Para lenguaje natural usando OpenAI u otros modelos de embeddings
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION match_players(
+    query_embedding vector(1536),
+    match_threshold FLOAT DEFAULT 0.0,
+    match_count INT DEFAULT 10,
+    region_filter TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    player_id TEXT,
+    handle TEXT,
+    gameradar_score FLOAT8,
+    similarity FLOAT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ga.player_id,
+        ga.nickname AS handle,
+        ga.gameradar_score::FLOAT8,
+        (1 - (ga.embedding_vector <=> query_embedding)) AS similarity
+    FROM gold_analytics ga
+    WHERE ga.embedding_vector IS NOT NULL
+      AND (1 - (ga.embedding_vector <=> query_embedding)) > match_threshold
+      AND (region_filter IS NULL OR ga.region = region_filter)
+    ORDER BY ga.embedding_vector <=> query_embedding
+    LIMIT match_count;
 END;
 $$ LANGUAGE plpgsql STABLE;
 

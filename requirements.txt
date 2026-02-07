@@ -25,6 +25,9 @@ httpx==0.26.0
 tenacity==8.2.3
 loguru==0.7.2
 
+# AI/ML - Embeddings
+openai==1.12.0
+
 # Proxy Services (opcional)
 # bright-data==1.0.0
 # scraperapi-sdk==1.0.0
