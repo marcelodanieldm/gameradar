@@ -2,6 +2,7 @@
   "dashboard": {
     "title": "गेमरडार AI - ई-स्पोर्ट्स प्रतिभा खोज",
     "subtitle": "एशिया में शीर्ष गेमिंग प्रतिभा की खोज करें",
+    "loading": "खिलाड़ी लोड हो रहे हैं...",
     "stats": {
       "totalPlayers": "कुल खिलाड़ी",
       "regions": "क्षेत्र",
@@ -10,7 +11,48 @@
     "error": {
       "title": "खिलाड़ी लोड करने में विफल",
       "retry": "पुनः प्रयास करें"
+    },
+    "viewMode": {
+      "auto": "ऑटो",
+      "feed": "फीड",
+      "dense": "सघन",
+      "minimal": "न्यूनतम"
     }
+  },
+  "feed": {
+    "verified": "सत्यापित",
+    "gameRadarScore": "GameRadar स्कोर",
+    "winRate": "जीत दर",
+    "kda": "KDA",
+    "games": "गेम्स",
+    "topChampions": "शीर्ष चैंपियन",
+    "contactWhatsApp": "व्हाट्सऐप",
+    "contactZalo": "Zalo",
+    "viewProfile": "प्रोफ़ाइल देखें"
+  },
+  "denseTable": {
+    "nickname": "उपनाम",
+    "country": "देश",
+    "rank": "रैंक",
+    "winRate": "जीत%",
+    "kda": "KDA",
+    "games": "गेम्स",
+    "champions": "चैंपियन",
+    "talent": "प्रतिभा"
+  },
+  "minimal": {
+    "verified": "सत्यापित",
+    "talentScore": "प्रतिभा स्कोर",
+    "winRate": "जीत दर",
+    "kda": "KDA",
+    "gamesPlayed": "खेले गए गेम",
+    "rank": "रैंक",
+    "region": "क्षेत्र",
+    "viewProfile": "प्रोफ़ाइल देखें",
+    "talentScoreTooltip": "जीत दर, KDA और गेम वॉल्यूम के आधार पर समग्र खिलाड़ी कौशल रेटिंग",
+    "winRateTooltip": "हाल के मैचों में जीते गए गेम का प्रतिशत",
+    "kdaTooltip": "किल/डेथ/असिस्ट अनुपात - मुकाबला प्रभावशीलता मापता है",
+    "gamesTooltip": "खेले गए रैंक किए गए गेम की कुल संख्या"
   },
   "table": {
     "nickname": "उपनाम",

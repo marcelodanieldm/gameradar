@@ -63,6 +63,7 @@ gameradar/
 ├── pipeline.py                  # Orquestación del flujo completo
 ├── database_schema.sql          # Esquema SQL de Supabase (Bronze/Silver/Gold)
 ├── gold_analytics.sql           # 📊 Analytics Layer - GameRadar Score avanzado
+├── skill_vector_embeddings.py  # 🧠 Generador de embeddings (pgvector)
 ├── test_ninja_scraper.py        # Tests del scraper ninja
 ├── test_e2e_playwright.py       # 🧪 Tests E2E backend (11 tests)
 ├── conftest.py                  # Configuración de pytest
@@ -73,8 +74,19 @@ gameradar/
 │   └── ingest.yml               # 🚀 Orquestador de ingesta automática (cada 6h)
 ├── frontend/
 │   ├── components/
-│   │   ├── TransculturalDashboard.tsx  # Dashboard adaptativo
+│   │   ├── TransculturalDashboard.tsx  # 🌍 Dashboard adaptativo regional
+│   │   ├── RadarDashboard.tsx   # Dashboard principal
 │   │   └── PlayerCard.tsx       # 🎨 UX Cultural (Mobile vs Technical)
+│   ├── hooks/
+│   │   └── useCountryDetection.ts  # 🌐 Detección automática de país
+│   ├── messages/
+│   │   ├── en.json              # 🇬🇧 English
+│   │   ├── hi.json              # 🇮🇳 हिन्दी (Hindi)
+│   │   ├── ko.json              # 🇰🇷 한국어 (Korean)
+│   │   ├── ja.json              # 🇯🇵 日本語 (Japanese)
+│   │   ├── vi.json              # 🇻🇳 Tiếng Việt (Vietnamese)
+│   │   ├── zh.json              # 🇨🇳 中文 (Chinese)
+│   │   └── th.json              # 🇹🇭 ไทย (Thai)
 │   ├── tests/
 │   │   └── e2e.spec.ts          # 🧪 Tests E2E frontend (17 tests)
 │   ├── playwright.config.ts     # Configuración de Playwright
@@ -667,6 +679,298 @@ Running 17 tests using 4 workers
 
 **Documentación completa**: Ver [E2E_TESTS.md](E2E_TESTS.md)
 
+---
+
+## 🧠 Sprint 2: Motor de Inteligencia Semántica y UX Regional
+
+### Paradigma
+- **Semantic Search:** Pasamos de filtros estáticos (SQL WHERE) a búsqueda por significado usando vectores.
+- **Adaptive UI:** La interfaz muta según la región del usuario para maximizar retención y engagement.
+
+### Entregables
+
+#### 1. Motor de Búsqueda Semántica (pgvector)
+
+**Tecnologías:**
+- PostgreSQL + extensión `pgvector`
+- Vectores de 4 dimensiones: `[KDA, WinRate, Agresividad, Versatilidad]`
+- Búsqueda por similitud usando cosine distance
+
+**Arquitectura:**
+
+```
+┌──────────────────────────────────────┐
+│  silver_players                      │
+│  ├─ win_rate                         │
+│  ├─ kda                              │
+│  ├─ kills_avg, deaths_avg            │
+│  └─ top_champions                    │
+└──────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────┐
+│  skill_vector_embeddings.py          │
+│  ├─ Normalización (0-1)              │
+│  ├─ Heurísticas de agresividad       │
+│  └─ Cálculo de versatilidad          │
+└──────────────────────────────────────┘
+              ↓
+┌──────────────────────────────────────┐
+│  gold_analytics                      │
+│  ├─ skill_vector vector(4)           │
+│  ├─ idx_gold_skill_vector (IVFFlat)  │
+│  └─ search_similar_players()         │
+└──────────────────────────────────────┘
+```
+
+**Uso del Motor:**
+
+```bash
+# 1. Generar embeddings para todos los jugadores
+python skill_vector_embeddings.py --limit 500
+
+# 2. Filtrar por país/juego
+python skill_vector_embeddings.py --country IN --game LOL --limit 100
+
+# 3. Dry run (no escribe en DB)
+python skill_vector_embeddings.py --dry-run
+```
+
+**Búsqueda de Jugadores Similares:**
+
+```sql
+-- Buscar los 10 jugadores más similares a un perfil
+SELECT 
+    nickname,
+    country_code,
+    similarity,
+    gameradar_score,
+    win_rate,
+    kda
+FROM search_similar_players(
+    '[0.5, 0.7, 0.3, 0.8]'::vector(4),  -- Vector de consulta
+    10,                                  -- Límite de resultados
+    'KR',                                -- Filtro por país (opcional)
+    'LOL'                                -- Filtro por juego (opcional)
+);
+```
+
+**Componentes del Vector:**
+
+| Dimensión | Descripción | Rango | Cálculo |
+|-----------|-------------|-------|---------|
+| **KDA** | Kill/Death/Assist ratio | 0-1 | `kda / 10` (normalizado) |
+| **WinRate** | Porcentaje de victorias | 0-1 | `win_rate / 100` |
+| **Agresividad** | Ratio kills/deaths | 0-1 | `(kills_avg / (deaths_avg + 1)) / 5` |
+| **Versatilidad** | Diversidad de campeones | 0-1 | `len(top_champions) / 3` |
+
+**Ventajas:**
+- ✅ Encuentra jugadores con perfiles de habilidad similares entre regiones
+- ✅ No depende de palabras clave exactas
+- ✅ Búsqueda en O(log n) con índice IVFFlat
+- ✅ Filtros opcionales por país/juego
+- ✅ Score de similitud (0-1) incluido en resultados
+
+---
+
+#### 2. UX Regional Adaptativa (3 Vistas)
+
+**Hook de Detección:** `useCountryDetection()`
+- Estrategia 1: Browser locale (`navigator.language`)
+- Estrategia 2: IP geolocation (ipapi.co)
+- Estrategia 3: Fallback a análisis de dataset
+
+**Vista 1: India/Vietnam Feed** 🇮🇳🇻🇳
+
+```typescript
+// Países: IN, VN, TH, PH, ID
+// Características:
+- Feed vertical estilo red social
+- GameRadar Score PROMINENTE (text-6xl)
+- Botones de acción grandes:
+  → WhatsApp (India)
+  → Zalo (Vietnam)
+- Stats en cards grandes y legibles
+- Tipografía robusta: font-devanagari para Hindi
+- Gradientes llamativos y colores saturados
+```
+
+**UX Rationale:**
+- Mobile-first: 80%+ del tráfico en mobile en India/Vietnam
+- Contacto directo: Cultura de comunicación instantánea (WhatsApp/Zalo)
+- Visual: Menos densidad de datos, más impacto visual
+
+**Vista 2: Korea/China Dense Table** 🇰🇷🇨🇳
+
+```typescript
+// Países: KR, CN
+// Características:
+- Tabla técnica de alta densidad
+- Fuentes compactas (text-xs, text-[10px])
+- Micro-stats visibles:
+  → WR%, KDA, Games, Champions
+  → Sorting en todas las columnas
+- Clase font-cjk para caracteres CJK
+- Hover effects con borde cyan
+- Info máxima en mínimo espacio
+```
+
+**UX Rationale:**
+- Data-driven: Cultura analítica, valoran estadísticas completas
+- Desktop-first: Mayoría accede desde PC gaming
+- Eficiencia: Quieren ver 50+ jugadores sin scroll
+
+**Vista 3: Japan Minimalist View** 🇯🇵
+
+```typescript
+// País: JP
+// Características:
+- Diseño limpio con mucho espacio en blanco
+- Tooltips explicativos para cada métrica:
+  → "Talent Score: Overall player skill rating..."
+  → "Win Rate: Percentage of games won..."
+  → "KDA: Kill/Death/Assist ratio..."
+- Fuentes light (font-light)
+- Bordes sutiles (border-slate-800/30)
+- Animaciones suaves (duration-500)
+- Componente MetricCard con Info icon
+```
+
+**UX Rationale:**
+- Trust-building: Cultura de transparencia y educación
+- Minimalismo: Diseño zen, menos es más
+- Explicación: Valoran entender el "por qué" de cada métrica
+
+---
+
+#### 3. Sistema de Internacionalización (i18n)
+
+**Framework:** `next-intl`
+- ✅ Cambio de idioma sin recarga de página
+- ✅ 7 idiomas soportados
+- ✅ Traducción de componentes con `useTranslations()`
+
+**Idiomas Implementados:**
+
+| Código | Idioma | Script | Font |
+|--------|--------|--------|------|
+| `en` | English | Latin | Default |
+| `hi` | हिन्दी | Devanagari | Noto Sans Devanagari |
+| `ko` | 한국어 | Hangul | Noto Sans CJK KR |
+| `ja` | 日本語 | Kanji/Hiragana | Noto Sans CJK JP |
+| `vi` | Tiếng Việt | Latin + diacríticos | Default |
+| `zh` | 中文 | Hanzi | Noto Sans CJK SC |
+| `th` | ไทย | Thai | Noto Sans Thai |
+
+**Uso en Componentes:**
+
+```tsx
+import { useTranslations } from 'next-intl';
+
+function MyComponent() {
+  const t = useTranslations('dashboard');
+  
+  return (
+    <h1>{t('title')}</h1>
+    <p>{t('stats.totalPlayers')}</p>
+  );
+}
+```
+
+**Estructura de Traducciones:**
+
+```json
+{
+  "dashboard": {
+    "viewMode": { "auto", "feed", "dense", "minimal" },
+    "loading": "..."
+  },
+  "feed": {
+    "gameRadarScore": "...",
+    "contactWhatsApp": "..."
+  },
+  "denseTable": {
+    "nickname": "...",
+    "winRate": "..."
+  },
+  "minimal": {
+    "talentScoreTooltip": "...",
+    "kdaTooltip": "..."
+  }
+}
+```
+
+---
+
+#### 4. Lógica de Selección Automática
+
+```typescript
+function determineRegionalView(): RegionalView {
+  switch (countryCode) {
+    case "IN", "VN", "TH", "PH", "ID":
+      return "feed";      // Mobile-heavy regions
+    
+    case "KR", "CN":
+      return "dense";     // Data-driven regions
+    
+    case "JP":
+      return "minimal";   // Trust-building UX
+    
+    default:
+      // Fallback: analizar is_mobile_heavy en dataset
+      if (mobileHeavyCount > 50%) return "feed";
+      return "dense";
+  }
+}
+```
+
+**Override Manual:**
+- 🌐 Auto (detección automática)
+- 📱 Feed (estilo social)
+- 📊 Dense (tabla técnica)
+- 🎨 Minimal (japonés)
+
+---
+
+### Especificaciones Técnicas
+
+**Base de Datos (gold_analytics):**
+```sql
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+ALTER TABLE gold_analytics 
+ADD COLUMN skill_vector vector(4);
+
+CREATE INDEX idx_gold_skill_vector 
+ON gold_analytics 
+USING ivfflat (skill_vector vector_cosine_ops)
+WITH (lists = 100);
+```
+
+**Frontend (TransculturalDashboard.tsx):**
+- 3 componentes especializados:
+  - `IndiaVietnamFeed`
+  - `KoreaChinaDenseTable`
+  - `JapanMinimalistView`
+- Hook `useCountryDetection()` con fallback
+- Hook `useTranslations()` para i18n
+- Clases Tailwind adaptativas:
+  - `font-devanagari` (Hindi)
+  - `font-cjk` (Korean/Chinese/Japanese)
+  - `font-light` vs `font-black` según región
+
+**Archivos Modificados:**
+- ✅ `gold_analytics.sql` - pgvector + search_similar_players()
+- ✅ `skill_vector_embeddings.py` - Generador de embeddings
+- ✅ `frontend/components/TransculturalDashboard.tsx` - 3 vistas
+- ✅ `frontend/hooks/useCountryDetection.ts` - Detección de país
+- ✅ `frontend/messages/*.json` - 7 archivos de traducción
+
+**Documentación Adicional:**
+- Ver [SPRINT2_SUMMARY.md](SPRINT2_SUMMARY.md) para guía completa
+- Ver [skill_vector_embeddings.py](skill_vector_embeddings.py) para heurísticas de embeddings
+
+---
+
 ## 🎯 Roadmap
 
 - [x] **Motor de Ingesta Bronze** - Scraper robusto multi-fuente implementado
@@ -676,7 +980,11 @@ Running 17 tests using 4 workers
 - [x] **Frontend UX Cultural** - PlayerCard adaptativo (Mobile vs Technical)
 - [x] **Transcultural Dashboard** - Consume silver_players con UI adaptativa
 - [x] **E2E Tests** - 28 tests con Playwright (Backend + Frontend)
+- [x] **Sprint 2: Motor de Inteligencia Semántica** - pgvector + embeddings + búsqueda por similitud
+- [x] **Sprint 2: UX Regional Adaptativa** - 3 vistas diferenciadas (India/Vietnam, Korea/China, Japan)
+- [x] **Sprint 2: Sistema i18n** - Traducción dinámica para 7 idiomas con next-intl
 - [ ] Dashboard web completo con visualizaciones (Next.js - en progreso)
+- [ ] API REST para búsqueda semántica
 - [ ] Soporte para Valorant
 - [ ] Scraper de Dotabuff
 - [ ] Machine Learning para predicción de talento

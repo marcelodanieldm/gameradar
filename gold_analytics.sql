@@ -3,6 +3,9 @@
 -- Función para calcular GameRadar Score con lógica regional
 -- ============================================================
 
+-- Extensión para vectores (pgvector)
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- Tabla gold_analytics (si no existe)
 CREATE TABLE IF NOT EXISTS gold_analytics (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -20,6 +23,10 @@ CREATE TABLE IF NOT EXISTS gold_analytics (
     
     -- GameRadar Score (calculado)
     gameradar_score DECIMAL(5,2) NOT NULL,
+
+    -- Vector de habilidades (pgvector)
+    -- Dimensiones: [kda, winrate, agresividad, versatilidad]
+    skill_vector vector(4),
     
     -- Componentes del score (para transparencia)
     winrate_component DECIMAL(5,2),
@@ -40,6 +47,9 @@ CREATE INDEX IF NOT EXISTS idx_gold_gameradar_score ON gold_analytics(gameradar_
 CREATE INDEX IF NOT EXISTS idx_gold_region ON gold_analytics(region);
 CREATE INDEX IF NOT EXISTS idx_gold_calculation_date ON gold_analytics(calculation_date DESC);
 CREATE INDEX IF NOT EXISTS idx_gold_player_id ON gold_analytics(player_id);
+CREATE INDEX IF NOT EXISTS idx_gold_skill_vector
+    ON gold_analytics USING ivfflat (skill_vector vector_cosine_ops)
+    WITH (lists = 100);
 
 -- ============================================================
 -- FUNCIÓN: calculate_gameradar_score_advanced
@@ -336,6 +346,49 @@ CREATE TRIGGER update_gold_on_silver_change
     ON silver_players
     FOR EACH ROW
     EXECUTE FUNCTION trigger_update_gold_analytics();
+
+-- ============================================================
+-- FUNCIÓN: search_similar_players
+-- Búsqueda de vecinos cercanos usando cosine similarity
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION search_similar_players(
+    p_query_vector vector(4),
+    p_limit INTEGER DEFAULT 10,
+    p_country_code TEXT DEFAULT NULL,
+    p_game TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    player_id TEXT,
+    nickname TEXT,
+    country_code TEXT,
+    region TEXT,
+    game TEXT,
+    similarity DOUBLE PRECISION,
+    gameradar_score DECIMAL,
+    win_rate DECIMAL,
+    kda DECIMAL
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ga.player_id,
+        ga.nickname,
+        ga.country_code,
+        ga.region,
+        ga.game,
+        (1 - (ga.skill_vector <=> p_query_vector)) AS similarity,
+        ga.gameradar_score,
+        ga.win_rate,
+        ga.kda
+    FROM gold_analytics ga
+    WHERE ga.skill_vector IS NOT NULL
+      AND (p_country_code IS NULL OR ga.country_code = p_country_code)
+      AND (p_game IS NULL OR ga.game = p_game)
+    ORDER BY ga.skill_vector <=> p_query_vector
+    LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;
 
 -- ============================================================
 -- VISTAS ANALÍTICAS

@@ -2,6 +2,7 @@
   "dashboard": {
     "title": "GameRadar AI - E-Sports Talent Scouting",
     "subtitle": "Discover top gaming talent across Asia",
+    "loading": "Loading players...",
     "stats": {
       "totalPlayers": "Total Players",
       "regions": "Regions",
@@ -10,7 +11,48 @@
     "error": {
       "title": "Failed to load players",
       "retry": "Retry"
+    },
+    "viewMode": {
+      "auto": "Auto",
+      "feed": "Feed",
+      "dense": "Dense",
+      "minimal": "Minimal"
     }
+  },
+  "feed": {
+    "verified": "Verified",
+    "gameRadarScore": "GameRadar Score",
+    "winRate": "Win Rate",
+    "kda": "KDA",
+    "games": "Games",
+    "topChampions": "Top Champions",
+    "contactWhatsApp": "WhatsApp",
+    "contactZalo": "Zalo",
+    "viewProfile": "View Profile"
+  },
+  "denseTable": {
+    "nickname": "Nickname",
+    "country": "Country",
+    "rank": "Rank",
+    "winRate": "WR%",
+    "kda": "KDA",
+    "games": "Games",
+    "champions": "Champions",
+    "talent": "Talent"
+  },
+  "minimal": {
+    "verified": "Verified",
+    "talentScore": "Talent Score",
+    "winRate": "Win Rate",
+    "kda": "KDA",
+    "gamesPlayed": "Games Played",
+    "rank": "Rank",
+    "region": "Region",
+    "viewProfile": "View Profile",
+    "talentScoreTooltip": "Overall player skill rating based on win rate, KDA, and game volume",
+    "winRateTooltip": "Percentage of games won in recent matches",
+    "kdaTooltip": "Kill/Death/Assist ratio - measures combat effectiveness",
+    "gamesTooltip": "Total number of ranked games played"
   },
   "table": {
     "nickname": "Nickname",

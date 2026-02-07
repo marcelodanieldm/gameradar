@@ -5,16 +5,19 @@
  * Consume tabla silver_players y renderiza UI adaptativa según región
  * 
  * Lógica:
- * - is_mobile_heavy = true → Mobile Cards (India/Vietnam)
- * - region = KR/CN → Data Table de alta densidad
+ * - India/Vietnam (is_mobile_heavy) → Feed vertical estilo red social
+ * - Corea/China → Grilla técnica de alta densidad
+ * - Japón → Vista minimalista con tooltips explicativos
  * 
- * Usa lucide-react para iconos y tailwind-merge para clases dinámicas
+ * Usa lucide-react para iconos, tailwind-merge para clases dinámicas
+ * next-intl para i18n sin recargar página
  * Fuentes optimizadas para CJK (Chino/Coreano/Japonés) y Devanagari (Hindi)
  */
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { twMerge } from "tailwind-merge";
+import { useTranslations } from "next-intl";
 import {
   Trophy,
   TrendingUp,
@@ -26,7 +29,16 @@ import {
   Phone,
   Mail,
   ExternalLink,
+  MessageCircle,
+  Info,
+  Zap,
+  Target,
+  Award,
 } from "lucide-react";
+import { useCountryDetection } from "@/hooks/useCountryDetection";
+
+// Tipos de vista regional
+type RegionalView = "feed" | "dense" | "minimal" | "auto";
 
 // Tipos
 interface SilverPlayer {
@@ -68,12 +80,15 @@ export default function TransculturalDashboard({
   supabaseKey,
   limit = 100,
 }: TransculturalDashboardProps) {
+  const t = useTranslations("dashboard");
+  const { countryCode, uiMode } = useCountryDetection();
+  
   const [players, setPlayers] = useState<SilverPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof SilverPlayer>("talent_score");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [viewMode, setViewMode] = useState<"auto" | "cards" | "table">("auto");
+  const [viewMode, setViewMode] = useState<RegionalView>("auto");
 
   // Cliente Supabase
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -124,41 +139,35 @@ export default function TransculturalDashboard({
       : bStr.localeCompare(aStr);
   });
 
-  // Determine UI mode based on is_mobile_heavy
-  const getModeForPlayer = (player: SilverPlayer): "cards" | "table" => {
+  // Determinar vista regional basada en país del usuario
+  const determineRegionalView = (): RegionalView => {
     if (viewMode !== "auto") return viewMode;
 
-    // Lógica de negocio: is_mobile_heavy → Cards
-    if (player.is_mobile_heavy) return "cards";
-
-    // Región KR/CN → Table
-    if (["KR", "CN", "JP"].includes(player.region.toUpperCase())) {
-      return "table";
+    // Basado en detección de país del usuario
+    switch (countryCode) {
+      case "IN":
+      case "VN":
+      case "TH":
+      case "PH":
+      case "ID":
+        return "feed"; // Feed vertical para mobile-heavy
+      
+      case "KR":
+      case "CN":
+        return "dense"; // Grilla técnica de alta densidad
+      
+      case "JP":
+        return "minimal"; // Vista minimalista con tooltips
+      
+      default:
+        // Fallback: analizar jugadores en el dataset
+        const mobileHeavyCount = players.filter((p) => p.is_mobile_heavy).length;
+        if (mobileHeavyCount > players.length / 2) return "feed";
+        return "dense";
     }
-
-    // Default: Cards para regiones mobile-heavy (IN, VN, TH, etc.)
-    return "cards";
   };
 
-  // Determinar modo predominante en el dataset
-  const predominantMode = (() => {
-    if (viewMode !== "auto") return viewMode;
-
-    const mobileHeavyCount = players.filter((p) => p.is_mobile_heavy).length;
-    const totalCount = players.length;
-
-    // Si más del 50% es mobile-heavy → Cards
-    if (mobileHeavyCount > totalCount / 2) return "cards";
-
-    // Si hay muchos KR/CN → Table
-    const denseRegions = players.filter((p) =>
-      ["KR", "CN", "JP"].includes(p.region.toUpperCase())
-    ).length;
-    if (denseRegions > totalCount / 2) return "table";
-
-    // Default: Cards
-    return "cards";
-  })();
+  const currentView = determineRegionalView();
 
   // Handle sort
   const handleSort = (field: keyof SilverPlayer) => {
@@ -177,7 +186,7 @@ export default function TransculturalDashboard({
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-cyan-400 border-opacity-75 mx-auto" />
           <p className="text-cyan-300 text-lg font-medium">
-            Cargando jugadores...
+            {t("loading")}
           </p>
         </div>
       </div>
@@ -241,31 +250,43 @@ export default function TransculturalDashboard({
                 )}
               >
                 <Globe className="w-4 h-4" />
-                <span className="text-sm font-medium">Auto</span>
+                <span className="text-sm font-medium">{t("viewMode.auto")}</span>
               </button>
               <button
-                onClick={() => setViewMode("cards")}
+                onClick={() => setViewMode("feed")}
                 className={twMerge(
                   "px-3 py-2 rounded-md transition-all flex items-center gap-2",
-                  viewMode === "cards"
+                  viewMode === "feed"
                     ? "bg-cyan-600 text-white shadow-lg"
                     : "text-slate-400 hover:text-white"
                 )}
               >
                 <Smartphone className="w-4 h-4" />
-                <span className="text-sm font-medium">Cards</span>
+                <span className="text-sm font-medium">{t("viewMode.feed")}</span>
               </button>
               <button
-                onClick={() => setViewMode("table")}
+                onClick={() => setViewMode("dense")}
                 className={twMerge(
                   "px-3 py-2 rounded-md transition-all flex items-center gap-2",
-                  viewMode === "table"
+                  viewMode === "dense"
                     ? "bg-cyan-600 text-white shadow-lg"
                     : "text-slate-400 hover:text-white"
                 )}
               >
                 <Monitor className="w-4 h-4" />
-                <span className="text-sm font-medium">Table</span>
+                <span className="text-sm font-medium">{t("viewMode.dense")}</span>
+              </button>
+              <button
+                onClick={() => setViewMode("minimal")}
+                className={twMerge(
+                  "px-3 py-2 rounded-md transition-all flex items-center gap-2",
+                  viewMode === "minimal"
+                    ? "bg-cyan-600 text-white shadow-lg"
+                    : "text-slate-400 hover:text-white"
+                )}
+              >
+                <Award className="w-4 h-4" />
+                <span className="text-sm font-medium">{t("viewMode.minimal")}</span>
               </button>
             </div>
           </div>
@@ -312,15 +333,19 @@ export default function TransculturalDashboard({
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {predominantMode === "cards" ? (
-          <MobileCards players={sortedPlayers} />
-        ) : (
-          <DataTable
+        {currentView === "feed" && (
+          <IndiaVietnamFeed players={sortedPlayers} />
+        )}
+        {currentView === "dense" && (
+          <KoreaChinaDenseTable
             players={sortedPlayers}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
           />
+        )}
+        {currentView === "minimal" && (
+          <JapanMinimalistView players={sortedPlayers} />
         )}
       </main>
     </div>
@@ -328,9 +353,504 @@ export default function TransculturalDashboard({
 }
 
 /**
- * Mobile Cards Component
- * Para regiones mobile-heavy (India, Vietnam, Tailandia)
- * Cards grandes con botones de acción directos
+ * India/Vietnam Feed Component
+ * Feed vertical estilo red social para regiones mobile-heavy
+ * Prioriza GameRadar Score y botones de contacto rápido (WhatsApp/Zalo)
+ */
+interface IndiaVietnamFeedProps {
+  players: SilverPlayer[];
+}
+
+function IndiaVietnamFeed({ players }: IndiaVietnamFeedProps) {
+  const t = useTranslations("feed");
+
+  return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      {players.map((player) => (
+        <div
+          key={player.id}
+          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-2xl overflow-hidden hover:border-cyan-500/50 transition-all hover:shadow-2xl hover:shadow-cyan-500/10"
+        >
+          {/* Header con GameRadar Score destacado */}
+          <div className="relative bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 p-8">
+            {player.is_verified && (
+              <div className="absolute top-4 right-4">
+                <div className="bg-green-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg">
+                  ✓ {t("verified")}
+                </div>
+              </div>
+            )}
+
+            {/* GameRadar Score - PROMINENTE */}
+            <div className="text-center mb-6">
+              <div className="inline-block bg-white/10 backdrop-blur-sm rounded-3xl px-8 py-4 border-2 border-white/20">
+                <p className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-1">
+                  {t("gameRadarScore")}
+                </p>
+                <p className="text-6xl font-black text-white drop-shadow-2xl">
+                  {player.talent_score ? player.talent_score.toFixed(0) : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Jugador Info */}
+            <div className="text-center">
+              <h2 className="text-3xl font-black text-white mb-2 font-devanagari drop-shadow-lg">
+                {player.nickname}
+              </h2>
+              {player.real_name && (
+                <p className="text-cyan-100 text-lg font-medium font-devanagari">
+                  {player.real_name}
+                </p>
+              )}
+              <div className="mt-3 flex items-center justify-center gap-3 text-white/90">
+                <span className="font-bold text-lg">{player.rank}</span>
+                <span className="text-white/60">•</span>
+                <span className="font-semibold">
+                  {player.region} • {player.country_code}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Grid - GRANDES Y LEGIBLES */}
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-600/30 rounded-2xl p-5 text-center">
+                <Trophy className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                <p className="text-green-300 text-xs font-bold uppercase mb-1">
+                  {t("winRate")}
+                </p>
+                <p className="text-3xl font-black text-green-400">
+                  {player.win_rate ? `${player.win_rate.toFixed(0)}%` : "—"}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-600/30 rounded-2xl p-5 text-center">
+                <Target className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                <p className="text-purple-300 text-xs font-bold uppercase mb-1">
+                  {t("kda")}
+                </p>
+                <p className="text-3xl font-black text-purple-400">
+                  {player.kda ? player.kda.toFixed(1) : "—"}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-600/30 rounded-2xl p-5 text-center">
+                <Zap className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                <p className="text-blue-300 text-xs font-bold uppercase mb-1">
+                  {t("games")}
+                </p>
+                <p className="text-3xl font-black text-blue-400">
+                  {player.games_played || "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Top Champions */}
+            {player.top_champions && player.top_champions.length > 0 && (
+              <div className="bg-slate-800/40 rounded-xl p-4">
+                <p className="text-slate-300 text-sm font-bold uppercase mb-3">
+                  {t("topChampions")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {player.top_champions.slice(0, 3).map((champ, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-500/40 text-cyan-100 text-sm font-bold px-4 py-2 rounded-full"
+                    >
+                      {champ}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Botones de Acción - PROMINENTES */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              {/* WhatsApp para India */}
+              {(player.country_code === "IN" || player.is_mobile_heavy) && (
+                <button className="flex items-center justify-center gap-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-green-500/50 hover:scale-105">
+                  <Phone className="w-5 h-5" />
+                  <span className="text-lg">{t("contactWhatsApp")}</span>
+                </button>
+              )}
+
+              {/* Zalo para Vietnam */}
+              {player.country_code === "VN" && (
+                <button className="flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/50 hover:scale-105">
+                  <MessageCircle className="w-5 h-5" />
+                  <span className="text-lg">{t("contactZalo")}</span>
+                </button>
+              )}
+
+              {/* Ver Perfil */}
+              {player.profile_url && (
+                <a
+                  href={player.profile_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-cyan-500/50 hover:scale-105"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  <span className="text-lg">{t("viewProfile")}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Korea/China Dense Table Component
+ * Grilla técnica de alta densidad con micro-stats
+ * Fuentes compactas, máxima información visible
+ */
+interface KoreaChinaDenseTableProps {
+  players: SilverPlayer[];
+  sortField: keyof SilverPlayer;
+  sortDirection: "asc" | "desc";
+  onSort: (field: keyof SilverPlayer) => void;
+}
+
+function KoreaChinaDenseTable({
+  players,
+  sortField,
+  sortDirection,
+  onSort,
+}: KoreaChinaDenseTableProps) {
+  const t = useTranslations("denseTable");
+
+  const SortIcon = ({ field }: { field: keyof SilverPlayer }) => {
+    if (sortField !== field) return null;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="w-3 h-3" />
+    ) : (
+      <ChevronDown className="w-3 h-3" />
+    );
+  };
+
+  return (
+    <div className="bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs font-cjk">
+          <thead className="bg-slate-950/90 border-b-2 border-cyan-600/50">
+            <tr>
+              <th className="px-2 py-2 text-left text-[10px] font-black text-cyan-400 uppercase tracking-wider">
+                #
+              </th>
+              <th
+                onClick={() => onSort("nickname")}
+                className="px-2 py-2 text-left text-[10px] font-black text-cyan-400 uppercase tracking-wider cursor-pointer hover:text-cyan-300 transition-colors"
+              >
+                <div className="flex items-center gap-1">
+                  {t("nickname")} <SortIcon field="nickname" />
+                </div>
+              </th>
+              <th className="px-2 py-2 text-left text-[10px] font-black text-cyan-400 uppercase">
+                {t("country")}
+              </th>
+              <th
+                onClick={() => onSort("rank")}
+                className="px-2 py-2 text-left text-[10px] font-black text-cyan-400 uppercase cursor-pointer hover:text-cyan-300"
+              >
+                <div className="flex items-center gap-1">
+                  {t("rank")} <SortIcon field="rank" />
+                </div>
+              </th>
+              <th
+                onClick={() => onSort("win_rate")}
+                className="px-2 py-2 text-center text-[10px] font-black text-cyan-400 uppercase cursor-pointer hover:text-cyan-300"
+              >
+                <div className="flex items-center justify-center gap-1">
+                  {t("winRate")} <SortIcon field="win_rate" />
+                </div>
+              </th>
+              <th
+                onClick={() => onSort("kda")}
+                className="px-2 py-2 text-center text-[10px] font-black text-cyan-400 uppercase cursor-pointer hover:text-cyan-300"
+              >
+                <div className="flex items-center justify-center gap-1">
+                  {t("kda")} <SortIcon field="kda" />
+                </div>
+              </th>
+              <th
+                onClick={() => onSort("games_played")}
+                className="px-2 py-2 text-center text-[10px] font-black text-cyan-400 uppercase cursor-pointer hover:text-cyan-300"
+              >
+                <div className="flex items-center justify-center gap-1">
+                  {t("games")} <SortIcon field="games_played" />
+                </div>
+              </th>
+              <th className="px-2 py-2 text-left text-[10px] font-black text-cyan-400 uppercase">
+                {t("champions")}
+              </th>
+              <th
+                onClick={() => onSort("talent_score")}
+                className="px-2 py-2 text-center text-[10px] font-black text-yellow-400 uppercase cursor-pointer hover:text-yellow-300"
+              >
+                <div className="flex items-center justify-center gap-1">
+                  {t("talent")} <SortIcon field="talent_score" />
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50">
+            {players.map((player, idx) => (
+              <tr
+                key={player.id}
+                className="hover:bg-cyan-600/5 transition-colors border-l-2 border-transparent hover:border-cyan-600"
+              >
+                <td className="px-2 py-2 text-slate-500 font-bold">{idx + 1}</td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    {player.avatar_url && (
+                      <img
+                        src={player.avatar_url}
+                        alt={player.nickname}
+                        className="w-6 h-6 rounded-full border border-slate-600"
+                      />
+                    )}
+                    <span className="text-white font-bold font-cjk">
+                      {player.nickname}
+                    </span>
+                    {player.is_verified && (
+                      <span className="text-green-400 text-[10px]">✓</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-2 py-2 text-slate-300 font-semibold">
+                  {player.country_code}
+                </td>
+                <td className="px-2 py-2 text-cyan-300 font-bold">
+                  {player.rank}
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <span
+                    className={twMerge(
+                      "font-black text-sm",
+                      player.win_rate && player.win_rate >= 55
+                        ? "text-green-400"
+                        : player.win_rate && player.win_rate >= 50
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                    )}
+                  >
+                    {player.win_rate ? `${player.win_rate.toFixed(1)}%` : "—"}
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-center">
+                  <span className="text-purple-400 font-black text-sm">
+                    {player.kda ? player.kda.toFixed(2) : "—"}
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-center text-slate-300 font-semibold">
+                  {player.games_played || "—"}
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex gap-1">
+                    {player.top_champions?.slice(0, 3).map((champ, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[9px] text-cyan-300 bg-slate-800/70 px-1.5 py-0.5 rounded font-bold"
+                      >
+                        {champ}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-2 py-2 text-center">
+                  {player.talent_score ? (
+                    <span className="text-yellow-400 font-black text-sm">
+                      {player.talent_score.toFixed(0)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Japan Minimalist View Component
+ * Diseño limpio con mucho espacio en blanco
+ * Tooltips explicativos para generar confianza
+ */
+interface JapanMinimalistViewProps {
+  players: SilverPlayer[];
+}
+
+function JapanMinimalistView({ players }: JapanMinimalistViewProps) {
+  const t = useTranslations("minimal");
+  const [hoveredMetric, setHoveredMetric] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-12">
+      {players.map((player) => (
+        <div
+          key={player.id}
+          className="bg-white/[0.02] backdrop-blur-sm border border-slate-800/30 rounded-3xl p-12 hover:border-slate-700/50 transition-all duration-500"
+        >
+          {/* Header minimalista */}
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h3 className="text-4xl font-light text-white mb-3 font-cjk">
+                {player.nickname}
+              </h3>
+              {player.real_name && (
+                <p className="text-slate-400 text-lg font-light">
+                  {player.real_name}
+                </p>
+              )}
+            </div>
+            {player.is_verified && (
+              <div className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-6 py-3 rounded-full font-medium">
+                ✓ {t("verified")}
+              </div>
+            )}
+          </div>
+
+          {/* Métricas con tooltips */}
+          <div className="grid grid-cols-4 gap-8 mb-12">
+            {/* Talent Score */}
+            <MetricCard
+              icon={<Trophy className="w-6 h-6" />}
+              label={t("talentScore")}
+              value={player.talent_score ? player.talent_score.toFixed(0) : "—"}
+              tooltip={t("talentScoreTooltip")}
+              color="yellow"
+            />
+
+            {/* Win Rate */}
+            <MetricCard
+              icon={<Target className="w-6 h-6" />}
+              label={t("winRate")}
+              value={player.win_rate ? `${player.win_rate.toFixed(1)}%` : "—"}
+              tooltip={t("winRateTooltip")}
+              color="green"
+            />
+
+            {/* KDA */}
+            <MetricCard
+              icon={<Zap className="w-6 h-6" />}
+              label={t("kda")}
+              value={player.kda ? player.kda.toFixed(2) : "—"}
+              tooltip={t("kdaTooltip")}
+              color="purple"
+            />
+
+            {/* Games */}
+            <MetricCard
+              icon={<TrendingUp className="w-6 h-6" />}
+              label={t("gamesPlayed")}
+              value={player.games_played?.toString() || "—"}
+              tooltip={t("gamesTooltip")}
+              color="blue"
+            />
+          </div>
+
+          {/* Información adicional */}
+          <div className="flex items-center justify-between pt-8 border-t border-slate-800/30">
+            <div className="flex items-center gap-8">
+              <div>
+                <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">
+                  {t("rank")}
+                </p>
+                <p className="text-white text-xl font-medium">{player.rank}</p>
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">
+                  {t("region")}
+                </p>
+                <p className="text-white text-xl font-medium">
+                  {player.region} • {player.country_code}
+                </p>
+              </div>
+            </div>
+
+            {player.profile_url && (
+              <a
+                href={player.profile_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-8 py-4 rounded-2xl transition-all font-medium"
+              >
+                <span>{t("viewProfile")}</span>
+                <ExternalLink className="w-5 h-5" />
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * MetricCard con tooltip para vista minimalista japonesa
+ */
+interface MetricCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tooltip: string;
+  color: "yellow" | "green" | "purple" | "blue";
+}
+
+function MetricCard({ icon, label, value, tooltip, color }: MetricCardProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const colorClasses = {
+    yellow: "text-yellow-400 border-yellow-400/20 hover:border-yellow-400/40",
+    green: "text-green-400 border-green-400/20 hover:border-green-400/40",
+    purple: "text-purple-400 border-purple-400/20 hover:border-purple-400/40",
+    blue: "text-blue-400 border-blue-400/20 hover:border-blue-400/40",
+  };
+
+  return (
+    <div
+      className={twMerge(
+        "relative bg-white/[0.02] border rounded-2xl p-6 transition-all duration-300",
+        colorClasses[color]
+      )}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {/* Tooltip */}
+      {showTooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-2xl z-50">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+            <p className="text-slate-300 text-xs leading-relaxed">{tooltip}</p>
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+            <div className="border-8 border-transparent border-t-slate-900" />
+          </div>
+        </div>
+      )}
+
+      <div className={twMerge("mb-3", `text-${color}-400`)}>{icon}</div>
+      <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">
+        {label}
+      </p>
+      <p className={twMerge("text-3xl font-light", `text-${color}-400`)}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Legacy Components (mantener compatibilidad)
  */
 interface MobileCardsProps {
   players: SilverPlayer[];
