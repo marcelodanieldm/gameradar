@@ -87,5 +87,18 @@
     "streetMode": "스트리트",
     "eliteMode": "엘리트",
     "detectedRegion": "지역"
+  },
+  "marketplace": {
+    "title": "플레이어 마켓플레이스",
+    "subtitle": "재능 있는 플레이어를 발견하고 연결하세요",
+    "player": "플레이어",
+    "country": "국가",
+    "talent": "재능",
+    "talentScore": "재능 점수",
+    "winRate": "승률",
+    "rank": "랭크",
+    "games": "게임",
+    "gamesPlayed": "플레이한 게임",
+    "viewProfile": "프로필 보기"
   }
 }

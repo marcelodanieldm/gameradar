@@ -87,5 +87,18 @@
     "streetMode": "街头",
     "eliteMode": "精英",
     "detectedRegion": "地区"
+  },
+  "marketplace": {
+    "title": "玩家市场",
+    "subtitle": "发现并联系有才华的玩家",
+    "player": "玩家",
+    "country": "国家",
+    "talent": "天赋",
+    "talentScore": "天赋评分",
+    "winRate": "胜率",
+    "rank": "段位",
+    "games": "比赛",
+    "gamesPlayed": "场次",
+    "viewProfile": "查看资料"
   }
 }

@@ -87,5 +87,18 @@
     "streetMode": "สตรีท",
     "eliteMode": "อีลีท",
     "detectedRegion": "ภูมิภาค"
+  },
+  "marketplace": {
+    "title": "ตลาดผู้เล่น",
+    "subtitle": "ค้นพบและเชื่อมต่อกับผู้เล่นที่มีพรหม",
+    "player": "ผู้เล่น",
+    "country": "ประเทศ",
+    "talent": "ความสามารถ",
+    "talentScore": "คะแนนความสามารถ",
+    "winRate": "อัตราชนะ",
+    "rank": "แรงก์",
+    "games": "เกม",
+    "gamesPlayed": "เกมที่เล่น",
+    "viewProfile": "ดูโปรไฟล์"
   }
 }

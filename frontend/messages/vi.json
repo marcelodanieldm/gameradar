@@ -82,5 +82,17 @@
     "autoMode": "Tự động",
     "streetMode": "Street",
     "eliteMode": "Elite",
-    "detectedRegion": "Khu vực"  }
+    "detectedRegion": "Khu vực"  },
+  "marketplace": {
+    "title": "Thị Trường Người Chơi",
+    "subtitle": "Khám phá và kết nối với các tài năng",
+    "player": "Người chơi",
+    "country": "Quốc gia",
+    "talent": "Tài năng",
+    "talentScore": "Điểm tài năng",
+    "winRate": "Tỉ lệ thắng",
+    "rank": "Xếp hạng",
+    "games": "Trận",
+    "gamesPlayed": "trận đã chơi",
+    "viewProfile": "Xem Hồ Sơ"  }
 }

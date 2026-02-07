@@ -124,5 +124,17 @@
     "autoMode": "ऑटो",
     "streetMode": "स्ट्रीट",
     "eliteMode": "एलीट",
-    "detectedRegion": "क्षेत्र"  }
+    "detectedRegion": "क्षेत्र"  },
+  "marketplace": {
+    "title": "प्लेयर मार्केटप्लेस",
+    "subtitle": "प्रतिभाशाली खिलाड़ियों को खोजें और जुड़ें",
+    "player": "खिलाड़ी",
+    "country": "देश",
+    "talent": "प्रतिभा",
+    "talentScore": "प्रतिभा स्कोर",
+    "winRate": "जीत दर",
+    "rank": "रैंक",
+    "games": "गेम",
+    "gamesPlayed": "गेम खेले गए",
+    "viewProfile": "प्रोफ़ाइल देखें"  }
 }

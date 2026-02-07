@@ -128,6 +128,17 @@
     "autoMode": "Auto",
     "streetMode": "Street",
     "eliteMode": "Elite",
-    "detectedRegion": "Region"
-  }
+    "detectedRegion": "Region"  },
+  "marketplace": {
+    "title": "Player Marketplace",
+    "subtitle": "Discover and connect with talented players",
+    "player": "Player",
+    "country": "Country",
+    "talent": "Talent",
+    "talentScore": "Talent Score",
+    "winRate": "Win Rate",
+    "rank": "Rank",
+    "games": "Games",
+    "gamesPlayed": "games played",
+    "viewProfile": "View Profile"  }
 }
