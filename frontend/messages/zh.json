@@ -48,5 +48,44 @@
     "errorMinLength": "请输入至少3个字符",
     "errorSearch": "搜索失败。请重试。",
     "gameRadarScore": "GameRadar"
+  },
+  "streetScout": {
+    "title": "街头球探",
+    "subtitle": "发现新星选手",
+    "trending": "热门",
+    "talentScore": "天赋",
+    "gameRadarScore": "GameRadar评分",
+    "winRate": "胜率",
+    "rank": "段位",
+    "topChampions": "常用英雄",
+    "endOfList": "已经到底部"
+  },
+  "eliteAnalyst": {
+    "title": "精英分析师",
+    "subtitle": "专业对比与分析",
+    "exportPDF": "导出PDF",
+    "exportCSV": "导出CSV",
+    "comparisonMode": "对比",
+    "tableMode": "表格",
+    "selectedCount": "已选 {count} 人",
+    "readyToCompare": "准备对比",
+    "player": "选手",
+    "gameRadarScore": "GameRadar评分",
+    "talentScore": "天赋评分",
+    "winRate": "胜率",
+    "gamesPlayed": "游戏场次",
+    "topChampions": "常用英雄",
+    "skillRadar": "技能雷达",
+    "metric": "指标",
+    "winner": "优胜者"
+  },
+  "discoveryHub": {
+    "detectingRegion": "正在检测您的地区...",
+    "errorTitle": "加载选手错误",
+    "retry": "重试",
+    "autoMode": "自动",
+    "streetMode": "街头",
+    "eliteMode": "精英",
+    "detectedRegion": "地区"
   }
 }

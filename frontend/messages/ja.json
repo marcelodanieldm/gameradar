@@ -48,5 +48,44 @@
     "errorMinLength": "3文字以上入力してください",
     "errorSearch": "検索に失敗しました。もう一度お試しください。",
     "gameRadarScore": "GameRadar"
+  },
+  "streetScout": {
+    "title": "ストリートスカウト",
+    "subtitle": "新星発掘",
+    "trending": "トレンド",
+    "talentScore": "才能",
+    "gameRadarScore": "GameRadarスコア",
+    "winRate": "勝率",
+    "rank": "ランク",
+    "topChampions": "使用チャンピオン",
+    "endOfList": "最後まで到達しました"
+  },
+  "eliteAnalyst": {
+    "title": "エリートアナリスト",
+    "subtitle": "専門家比較と分析",
+    "exportPDF": "PDFエクスポート",
+    "exportCSV": "CSVエクスポート",
+    "comparisonMode": "比較",
+    "tableMode": "テーブル",
+    "selectedCount": "{count}人選択中",
+    "readyToCompare": "比較準備完了",
+    "player": "プレイヤー",
+    "gameRadarScore": "GameRadarスコア",
+    "talentScore": "才能スコア",
+    "winRate": "勝率",
+    "gamesPlayed": "プレイ数",
+    "topChampions": "使用チャンピオン",
+    "skillRadar": "スキルレーダー",
+    "metric": "指標",
+    "winner": "優勝"
+  },
+  "discoveryHub": {
+    "detectingRegion": "地域を検出中...",
+    "errorTitle": "プレイヤー読み込みエラー",
+    "retry": "再試行",
+    "autoMode": "自動",
+    "streetMode": "ストリート",
+    "eliteMode": "エリート",
+    "detectedRegion": "地域"
   }
 }

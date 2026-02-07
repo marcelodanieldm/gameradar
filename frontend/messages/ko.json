@@ -48,5 +48,44 @@
     "errorMinLength": "최소 3자 이상 입력하세요",
     "errorSearch": "검색에 실패했습니다. 다시 시도하세요.",
     "gameRadarScore": "GameRadar"
+  },
+  "streetScout": {
+    "title": "스트리트 스카우트",
+    "subtitle": "라이징 스타 발견",
+    "trending": "트렌딩",
+    "talentScore": "재능",
+    "gameRadarScore": "GameRadar 점수",
+    "winRate": "승률",
+    "rank": "랭크",
+    "topChampions": "주요 챔피언",
+    "endOfList": "마지막에 도달했습니다"
+  },
+  "eliteAnalyst": {
+    "title": "엘리트 분석가",
+    "subtitle": "전문가 비교 및 분석",
+    "exportPDF": "PDF 내보내기",
+    "exportCSV": "CSV 내보내기",
+    "comparisonMode": "비교",
+    "tableMode": "테이블",
+    "selectedCount": "{count}명 선택됨",
+    "readyToCompare": "비교 준비 완료",
+    "player": "플레이어",
+    "gameRadarScore": "GameRadar 점수",
+    "talentScore": "재능 점수",
+    "winRate": "승률",
+    "gamesPlayed": "플레이한 게임",
+    "topChampions": "주요 챔피언",
+    "skillRadar": "스킬 레이더",
+    "metric": "메트릭",
+    "winner": "승자"
+  },
+  "discoveryHub": {
+    "detectingRegion": "지역 감지 중...",
+    "errorTitle": "플레이어 로드 오류",
+    "retry": "다시 시도",
+    "autoMode": "자동",
+    "streetMode": "스트리트",
+    "eliteMode": "엘리트",
+    "detectedRegion": "지역"
   }
 }

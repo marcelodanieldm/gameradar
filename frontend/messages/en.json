@@ -90,5 +90,44 @@
     "errorMinLength": "Enter at least 3 characters",
     "errorSearch": "Search failed. Please try again.",
     "gameRadarScore": "GameRadar"
+  },
+  "streetScout": {
+    "title": "Street Scout",
+    "subtitle": "Discover rising stars",
+    "trending": "TRENDING",
+    "talentScore": "Talent",
+    "gameRadarScore": "GameRadar Score",
+    "winRate": "Win Rate",
+    "rank": "Rank",
+    "topChampions": "Top Champions",
+    "endOfList": "You've reached the end"
+  },
+  "eliteAnalyst": {
+    "title": "Elite Analyst",
+    "subtitle": "Professional comparison & analysis",
+    "exportPDF": "Export PDF",
+    "exportCSV": "Export CSV",
+    "comparisonMode": "Comparison",
+    "tableMode": "Table",
+    "selectedCount": "{count} players selected",
+    "readyToCompare": "Ready to compare",
+    "player": "Player",
+    "gameRadarScore": "GameRadar Score",
+    "talentScore": "Talent Score",
+    "winRate": "Win Rate",
+    "gamesPlayed": "Games Played",
+    "topChampions": "Top Champions",
+    "skillRadar": "Skill Radar",
+    "metric": "Metric",
+    "winner": "Winner"
+  },
+  "discoveryHub": {
+    "detectingRegion": "Detecting your region...",
+    "errorTitle": "Error loading players",
+    "retry": "Retry",
+    "autoMode": "Auto",
+    "streetMode": "Street",
+    "eliteMode": "Elite",
+    "detectedRegion": "Region"
   }
 }

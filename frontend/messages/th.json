@@ -48,5 +48,44 @@
     "errorMinLength": "กรุณาป้อนอย่างน้อย 3 ตัวอักษร",
     "errorSearch": "การค้นหาล้มเหลว กรุณาลองอีกครั้ง",
     "gameRadarScore": "GameRadar"
+  },
+  "streetScout": {
+    "title": "สตรีทสเคาต์",
+    "subtitle": "ค้นพบดาวรุ่งใหม่",
+    "trending": "แนวโน้ม",
+    "talentScore": "ความสามารถ",
+    "gameRadarScore": "คะแนน GameRadar",
+    "winRate": "อัตราชนะ",
+    "rank": "แรงก์",
+    "topChampions": "แชมป์หลัก",
+    "endOfList": "ถึงสิ้นสุดแล้ว"
+  },
+  "eliteAnalyst": {
+    "title": "นักวิเคราะห์ชั้นสูง",
+    "subtitle": "เปรียบเทียบและวิเคราะห์แบบมืออาชีพ",
+    "exportPDF": "ส่งออก PDF",
+    "exportCSV": "ส่งออก CSV",
+    "comparisonMode": "เปรียบเทียบ",
+    "tableMode": "ตาราง",
+    "selectedCount": "เลือก {count} คน",
+    "readyToCompare": "พร้อมเปรียบเทียบ",
+    "player": "ผู้เล่น",
+    "gameRadarScore": "คะแนน GameRadar",
+    "talentScore": "คะแนนความสามารถ",
+    "winRate": "อัตราชนะ",
+    "gamesPlayed": "จำนวนเกม",
+    "topChampions": "แชมป์หลัก",
+    "skillRadar": "เรดาร์ทักษะ",
+    "metric": "ตัวชี้วัด",
+    "winner": "ผู้ชนะ"
+  },
+  "discoveryHub": {
+    "detectingRegion": "กำลังตรวจสอบภูมิภาคของคุณ...",
+    "errorTitle": "เกิดข้อผิดพลาดในการโหลดผู้เล่น",
+    "retry": "ลองอีกครั้ง",
+    "autoMode": "อัตโนมัติ",
+    "streetMode": "สตรีท",
+    "eliteMode": "อีลีท",
+    "detectedRegion": "ภูมิภาค"
   }
 }
