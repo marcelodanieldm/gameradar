@@ -37,5 +37,16 @@
     "topChampions": "主力英雄",
     "contactWhatsApp": "WhatsApp",
     "viewProfile": "查看资料"
+  },
+  "search": {
+    "placeholder": "寻找你的下一个明星选手...",
+    "search": "搜索",
+    "searching": "搜索中...",
+    "resultsFound": "找到 {count} 名选手",
+    "noResults": "未找到选手",
+    "tryDifferent": "请尝试其他搜索关键词",
+    "errorMinLength": "请输入至少3个字符",
+    "errorSearch": "搜索失败。请重试。",
+    "gameRadarScore": "GameRadar"
   }
 }

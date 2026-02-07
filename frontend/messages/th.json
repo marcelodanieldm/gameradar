@@ -37,5 +37,16 @@
     "topChampions": "แชมป์หลัก",
     "contactWhatsApp": "WhatsApp",
     "viewProfile": "ดูโปรไฟล์"
+  },
+  "search": {
+    "placeholder": "ค้นหาผู้เล่นดาวรุ่งคนต่อไปของคุณ...",
+    "search": "ค้นหา",
+    "searching": "กำลังค้นหา...",
+    "resultsFound": "พบ {count} ผู้เล่น",
+    "noResults": "ไม่พบผู้เล่น",
+    "tryDifferent": "ลองค้นหาคำอื่น",
+    "errorMinLength": "กรุณาป้อนอย่างน้อย 3 ตัวอักษร",
+    "errorSearch": "การค้นหาล้มเหลว กรุณาลองอีกครั้ง",
+    "gameRadarScore": "GameRadar"
   }
 }

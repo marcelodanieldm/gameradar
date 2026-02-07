@@ -37,5 +37,16 @@
     "topChampions": "主力チャンピオン",
     "contactWhatsApp": "WhatsApp",
     "viewProfile": "プロフィールを見る"
+  },
+  "search": {
+    "placeholder": "次のスタープレイヤーを見つける...",
+    "search": "検索",
+    "searching": "検索中...",
+    "resultsFound": "{count}人のプレイヤーが見つかりました",
+    "noResults": "プレイヤーが見つかりませんでした",
+    "tryDifferent": "別の検索クエリをお試しください",
+    "errorMinLength": "3文字以上入力してください",
+    "errorSearch": "検索に失敗しました。もう一度お試しください。",
+    "gameRadarScore": "GameRadar"
   }
 }

@@ -79,5 +79,16 @@
     "topChampions": "Top Champions",
     "contactWhatsApp": "WhatsApp",
     "viewProfile": "View Profile"
+  },
+  "search": {
+    "placeholder": "Find your next star player...",
+    "search": "Search",
+    "searching": "Searching...",
+    "resultsFound": "{count} players found",
+    "noResults": "No players found",
+    "tryDifferent": "Try a different search query",
+    "errorMinLength": "Enter at least 3 characters",
+    "errorSearch": "Search failed. Please try again.",
+    "gameRadarScore": "GameRadar"
   }
 }

@@ -78,6 +78,15 @@
     "champions": "चैंपियन",
     "topChampions": "शीर्ष चैंपियन",
     "contactWhatsApp": "WhatsApp",
-    "viewProfile": "प्रोफ़ाइल देखें"
-  }
+    "viewProfile": "प्रोफ़ाइल देखें"  },
+  "search": {
+    "placeholder": "अपने अगले स्टार खिलाड़ी को खोजें...",
+    "search": "खोजें",
+    "searching": "खोज रहे हैं...",
+    "resultsFound": "{count} खिलाड़ी मिले",
+    "noResults": "कोई खिलाड़ी नहीं मिला",
+    "tryDifferent": "एक अलग खोज क्वेरी आज़माएं",
+    "errorMinLength": "कम से कम 3 अक्षर दर्ज करें",
+    "errorSearch": "खोज विफल रही। कृपया पुनः प्रयास करें।",
+    "gameRadarScore": "GameRadar"  }
 }
