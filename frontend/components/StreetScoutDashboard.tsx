@@ -1,4 +1,7 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface UsageStats {
   searchesUsed: number;
@@ -19,41 +22,71 @@ interface MarketAccess {
   playersDiscovered: number;
 }
 
-export default function StreetScoutDashboard() {
-  const [stats, setStats] = useState<UsageStats>({
-    searchesUsed: 23,
-    searchesLimit: 50,
-    marketsUsed: 3,
-    marketsLimit: 3,
-    currentPeriodStart: '2026-03-01',
-    currentPeriodEnd: '2026-03-31',
-    subscriptionStatus: 'active',
-    daysRemaining: 22,
-  });
+interface DashboardProps {
+  userId: string;
+  initialStats: UsageStats;
+  selectedMarkets: string[];
+}
 
-  const [selectedMarkets, setSelectedMarkets] = useState<MarketAccess[]>([
-    {
-      id: 'kr',
-      name: 'Corea del Sur',
-      region: 'East Asia',
-      flag: '🇰🇷',
-      playersDiscovered: 45,
-    },
-    {
-      id: 'jp',
-      name: 'Japón',
-      region: 'East Asia',
-      flag: '🇯🇵',
-      playersDiscovered: 32,
-    },
-    {
-      id: 'th',
-      name: 'Tailandia',
-      region: 'Southeast Asia',
-      flag: '🇹🇭',
-      playersDiscovered: 18,
-    },
-  ]);
+const MARKET_DATA: Record<string, { name: string; region: string; flag: string }> = {
+  'kr': { name: 'Corea del Sur', region: 'East Asia', flag: '🇰🇷' },
+  'jp': { name: 'Japón', region: 'East Asia', flag: '🇯🇵' },
+  'cn': { name: 'China', region: 'East Asia', flag: '🇨🇳' },
+  'th': { name: 'Tailandia', region: 'Southeast Asia', flag: '🇹🇭' },
+  'vn': { name: 'Vietnam', region: 'Southeast Asia', flag: '🇻🇳' },
+  'ph': { name: 'Filipinas', region: 'Southeast Asia', flag: '🇵🇭' },
+  'in': { name: 'India', region: 'South Asia', flag: '🇮🇳' },
+};
+
+export default function StreetScoutDashboard({ userId, initialStats, selectedMarkets }: DashboardProps) {
+  const [stats, setStats] = useState<UsageStats>(initialStats);
+  const [markets, setMarkets] = useState<MarketAccess[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Convert selected markets to MarketAccess format
+    const marketAccessList = selectedMarkets.map(marketId => ({
+      id: marketId,
+      name: MARKET_DATA[marketId]?.name || marketId,
+      region: MARKET_DATA[marketId]?.region || 'Unknown',
+      flag: MARKET_DATA[marketId]?.flag || '🌏',
+      playersDiscovered: 0, // This would come from a real query
+    }));
+    setMarkets(marketAccessList);
+
+    // Fetch latest stats periodically
+    const fetchLatestStats = async () => {
+      const { data } = await supabase
+        .from('active_subscriptions_view')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (data) {
+        setStats({
+          searchesUsed: data.searches_used || 0,
+          searchesLimit: data.searches_limit || 50,
+          marketsUsed: data.selected_markets?.length || 0,
+          marketsLimit: 3,
+          currentPeriodStart: data.current_period_start,
+          currentPeriodEnd: data.current_period_end,
+          subscriptionStatus: data.status,
+          daysRemaining: Math.ceil(
+            (new Date(data.current_period_end).getTime() - new Date().getTime()) / 
+            (1000 * 60 * 60 * 24)
+          ),
+        });
+      }
+    };
+
+    // Fetch immediately
+    fetchLatestStats();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchLatestStats, 30000);
+
+    return () => clearInterval(interval);
+  }, [userId, selectedMarkets, supabase]);
 
   const [recentSearches, setRecentSearches] = useState([
     {
@@ -161,7 +194,7 @@ export default function StreetScoutDashboard() {
               <div className="text-4xl">🌏</div>
             </div>
             <div className="flex space-x-2 mt-4">
-              {selectedMarkets.map((market) => (
+              {markets.map((market) => (
                 <div
                   key={market.id}
                   className="text-3xl"
@@ -198,7 +231,7 @@ export default function StreetScoutDashboard() {
               </button>
             </div>
             <div className="space-y-4">
-              {selectedMarkets.map((market) => (
+              {markets.map((market) => (
                 <div
                   key={market.id}
                   className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-blue-500/50 transition"

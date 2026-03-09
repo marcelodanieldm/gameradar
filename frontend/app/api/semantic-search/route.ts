@@ -1,6 +1,7 @@
 /**
- * API Route: Semantic Search
+ * API Route: Semantic Search (PROTECTED)
  * Endpoint para búsqueda semántica de jugadores usando OpenAI + Supabase
+ * Requiere autenticación y suscripción activa
  * 
  * POST /api/semantic-search
  * Body: { query: string, region_filter?: string, match_threshold?: number, match_count?: number }
@@ -8,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { withSubscription, canUserSearch, incrementSearchCount } from "@/lib/api/auth-middleware";
 import OpenAI from "openai";
 
 // Inicializar clientes (usar variables de entorno)
@@ -20,8 +22,22 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-export async function POST(request: NextRequest) {
+export const POST = withSubscription(async (request: NextRequest, session: any) => {
   try {
+    const userId = session.user.id;
+
+    // Verificar límite de búsquedas
+    const canSearch = await canUserSearch(userId);
+    if (!canSearch) {
+      return NextResponse.json(
+        { 
+          error: 'Search limit reached',
+          message: 'Has alcanzado tu límite de búsquedas mensuales. Actualiza tu plan para continuar.'
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const {
       query,
@@ -39,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Generar embedding del query usando OpenAI
-    console.log(`[Semantic Search] Generating embedding for: "${query}"`);
+    console.log(`[Semantic Search] User ${userId} searching: "${query}"`);
     
     const embeddingResponse = await openai.embeddings.create({
       input: query,
@@ -93,6 +109,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Semantic Search] Found ${enrichedResults.length} players`);
 
+    // Incrementar contador de búsquedas
+    await incrementSearchCount(userId);
+
+    // Log de la búsqueda para analytics
+    await supabase.from('search_logs').insert({
+      user_id: userId,
+      query: query,
+      market: region_filter,
+      results_count: enrichedResults.length,
+    });
+
     return NextResponse.json({
       success: true,
       query,
@@ -109,7 +136,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // GET method (opcional): para health check
 export async function GET() {
