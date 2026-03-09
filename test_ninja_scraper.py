@@ -3,6 +3,7 @@ Script de testing rápido para el scraper ninja
 Prueba las funcionalidades sin ejecutar el scraping completo
 """
 import asyncio
+import pytest
 from loguru import logger
 
 # Configurar logging para testing
@@ -10,6 +11,7 @@ logger.remove()
 logger.add(lambda msg: print(msg), level="INFO")
 
 
+@pytest.mark.asyncio
 async def test_stealth_browser():
     """Test 1: Verificar configuración stealth del browser"""
     logger.info("🧪 TEST 1: Stealth Browser Configuration")
@@ -41,6 +43,7 @@ async def test_stealth_browser():
         logger.error(f"✗ Error en test de stealth browser: {e}")
 
 
+@pytest.mark.asyncio
 async def test_proxy_rotation():
     """Test 2: Verificar rotación de proxies"""
     logger.info("\n🧪 TEST 2: Proxy Rotation")
@@ -139,6 +142,7 @@ def test_data_validation():
         logger.error(f"✗ Error en test de validación: {e}")
 
 
+@pytest.mark.asyncio
 async def test_scraper_dry_run():
     """Test 5: Dry run del scraper (sin scraping real)"""
     logger.info("\n🧪 TEST 5: Scraper Dry Run")

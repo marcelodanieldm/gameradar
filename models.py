@@ -2,9 +2,9 @@
 Modelos de datos para GameRadar AI
 Soporte completo para caracteres Unicode (Hindi, Chino, Coreano)
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -34,15 +34,15 @@ class GameTitle(str, Enum):
 
 class Champion(BaseModel):
     """Modelo para campeón/agente"""
+    model_config = ConfigDict(
+        json_encoders={
+            str: lambda v: v if isinstance(v, str) else str(v)
+        }
+    )
+    
     name: str = Field(..., description="Nombre del campeón/agente")
     games_played: int = Field(..., ge=0, description="Partidas jugadas")
     win_rate: float = Field(..., ge=0, le=100, description="Win rate en porcentaje")
-    
-    class Config:
-        # Soporte Unicode completo
-        json_encoders = {
-            str: lambda v: v if isinstance(v, str) else str(v)
-        }
 
 
 class PlayerStats(BaseModel):
@@ -76,17 +76,18 @@ class PlayerProfile(BaseModel):
     # Top Campeones/Agentes
     top_champions: List[Champion] = Field(
         ..., 
-        min_items=1, 
-        max_items=3, 
+        min_length=1, 
+        max_length=3, 
         description="Top 3 campeones/agentes"
     )
     
     # Metadatos
     profile_url: str = Field(..., description="URL del perfil original")
-    scraped_at: datetime = Field(default_factory=datetime.utcnow, description="Timestamp de scraping")
+    scraped_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Timestamp de scraping")
     data_quality_score: float = Field(1.0, ge=0, le=1, description="Score de calidad del dato")
     
-    @validator('nickname')
+    @field_validator('nickname')
+    @classmethod
     def validate_unicode_support(cls, v):
         """Valida que el nickname soporte Unicode correctamente"""
         if not v:
@@ -98,35 +99,36 @@ class PlayerProfile(BaseModel):
             raise ValueError("Nickname contiene caracteres inválidos")
         return v
     
-    @validator('top_champions')
+    @field_validator('top_champions')
+    @classmethod
     def validate_top_champions(cls, v):
         """Valida que haya exactamente 3 campeones o menos"""
         if len(v) > 3:
             return v[:3]  # Tomar solo los primeros 3
         return v
     
-    class Config:
-        # Configuración para soporte Unicode completo
-        json_encoders = {
+    model_config = ConfigDict(
+        json_encoders={
             datetime: lambda v: v.isoformat(),
             CountryCode: lambda v: v.value,
             GameTitle: lambda v: v.value
-        }
-        use_enum_values = True
+        },
+        use_enum_values=True
+    )
 
 
 class BronzeRecord(BaseModel):
     """Modelo para capa Bronze (datos crudos)"""
     raw_data: dict = Field(..., description="Datos sin procesar del scraping")
     source: str = Field(..., description="Fuente del dato (Liquipedia, OP.GG, etc)")
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
+    scraped_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
 
 class SilverRecord(BaseModel):
     """Modelo para capa Silver (datos normalizados)"""
     player_profile: PlayerProfile = Field(..., description="Perfil normalizado")
     bronze_id: Optional[int] = Field(None, description="ID del registro Bronze original")
-    normalized_at: datetime = Field(default_factory=datetime.utcnow)
+    normalized_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class GoldRecord(BaseModel):
@@ -134,7 +136,7 @@ class GoldRecord(BaseModel):
     player_profile: PlayerProfile = Field(..., description="Perfil enriquecido")
     silver_id: Optional[int] = Field(None, description="ID del registro Silver")
     enrichment_notes: Optional[str] = Field(None, description="Notas de enriquecimiento")
-    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    validated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_verified: bool = Field(False, description="Si el perfil ha sido verificado manualmente")
 
 

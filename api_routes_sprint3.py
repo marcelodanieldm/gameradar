@@ -5,7 +5,7 @@ Sprint 3: Regional Payment Gateways and Notification System
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 # Import our services
@@ -77,7 +77,7 @@ async def create_payment(request: PaymentCreateRequest):
             "order_id": response.order_id,
             "payment_id": response.payment_id,
             "status": "pending",
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
         
         return response.dict()
@@ -120,7 +120,7 @@ async def verify_payment(request: PaymentVerifyRequest):
         supabase.table("payment_transactions").update({
             "status": "completed",
             "payment_id": payment_id,
-            "completed_at": datetime.utcnow().isoformat()
+            "completed_at": datetime.now(timezone.utc).isoformat()
         }).eq("user_id", request.user_id).eq("status", "pending").execute()
         
         # Activate premium features for user
@@ -128,7 +128,7 @@ async def verify_payment(request: PaymentVerifyRequest):
             "user_id": request.user_id,
             "subscription_type": "premium",
             "status": "active",
-            "activated_at": datetime.utcnow().isoformat()
+            "activated_at": datetime.now(timezone.utc).isoformat()
         }).execute()
         
         return {
@@ -182,7 +182,7 @@ async def subscribe_talent_ping(request: TalentPingSubscribeRequest):
             "telegram_id": request.telegram_id,
             "email": request.email,
             "alert_frequency": request.alert_frequency,
-            "subscribed_at": datetime.utcnow().isoformat(),
+            "subscribed_at": datetime.now(timezone.utc).isoformat(),
             "is_active": True
         }
         
@@ -230,7 +230,7 @@ async def unsubscribe_talent_ping(user_id: str):
     try:
         supabase.table("talent_ping_subscriptions").update({
             "is_active": False,
-            "unsubscribed_at": datetime.utcnow().isoformat()
+            "unsubscribed_at": datetime.now(timezone.utc).isoformat()
         }).eq("user_id", user_id).execute()
         
         return {
@@ -297,7 +297,7 @@ async def send_talent_alert(
             "player_name": player_name,
             "channels_sent": list(results.keys()),
             "delivery_status": results,
-            "sent_at": datetime.utcnow().isoformat()
+            "sent_at": datetime.now(timezone.utc).isoformat()
         }).execute()
         
         return {

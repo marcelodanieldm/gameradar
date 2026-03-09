@@ -8,48 +8,78 @@ Características:
 - Detección automática de encoding Unicode
 - Manejo robusto de errores (no se detiene si falta un dato)
 - Integración directa con Supabase Bronze layer
+- Técnicas avanzadas anti-detección para evitar bloqueos
 """
 import asyncio
 import re
+import random
 from typing import Dict, List, Optional, Any
 from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timezone
 
 from supabase_client import SupabaseClient
 from country_detector import detect_country, CountryCode
 from models import GameTitle
+from config import settings
 
 
 class BronzeIngestionScraper:
     """
     Scraper robusto para ingesta de datos en capa Bronze
     Diseñado para manejar múltiples fuentes y caracteres asiáticos
+    Incluye técnicas anti-detección avanzadas
     """
     
-    def __init__(self, region: str = "KR"):
+    # User-Agents realistas para rotar
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"
+    ]
+    
+    def __init__(self, region: str = "KR", headless: bool = True):
         """
         Inicializa el scraper de ingesta
         
         Args:
             region: Región objetivo ('KR', 'IN', 'CN', 'VN', etc.)
+            headless: Si True, ejecuta browser en modo headless (sin GUI)
+                     Si False, muestra el browser (menos detectable pero más lento)
         """
         self.region = region.upper()
+        self.headless = headless
         self.supabase = SupabaseClient()
         self.browser: Optional[Browser] = None
         self.scraped_count = 0
         self.error_count = 0
+        self.user_agent = random.choice(self.USER_AGENTS)
         
         logger.info(f"🎯 Scraper de ingesta Bronze inicializado para región: {self.region}")
+        if not headless:
+            logger.warning("⚠ Modo NO-HEADLESS activado - el browser será visible")
     
     async def __aenter__(self):
-        """Context manager: inicializar browser"""
+        """Context manager: inicializar browser con configuración stealth"""
         playwright = await async_playwright().start()
         self.browser = await playwright.chromium.launch(
-            headless=True,
-            args=['--disable-blink-features=AutomationControlled']
+            headless=self.headless,  # Configurable: False para bypassear WAF
+            args=[
+                '--disable-blink-features=AutomationControlled',
+                '--disable-dev-shm-usage',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-gpu',
+                '--window-size=1920,1080',
+                '--start-maximized'
+            ]
         )
-        logger.info("🌐 Browser iniciado")
+        mode_text = "headless" if self.headless else "visible"
+        logger.info(f"🌐 Browser iniciado en modo {mode_text} con configuración anti-detección")
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -57,6 +87,107 @@ class BronzeIngestionScraper:
         if self.browser:
             await self.browser.close()
             logger.info(f"🌐 Browser cerrado | Scraped: {self.scraped_count} | Errors: {self.error_count}")
+    
+    async def setup_stealth_page(self, page: Page) -> None:
+        """
+        Configura una página con técnicas anti-detección avanzadas
+        
+        Args:
+            page: Página de Playwright a configurar
+        """
+        # 1. User-Agent realista
+        await page.set_extra_http_headers({
+            "User-Agent": self.user_agent,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,ko;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0"
+        })
+        
+        # 2. Viewport aleatorio (simular diferentes dispositivos)
+        viewports = [
+            {"width": 1920, "height": 1080},
+            {"width": 1366, "height": 768},
+            {"width": 1536, "height": 864},
+            {"width": 1440, "height": 900}
+        ]
+        await page.set_viewport_size(random.choice(viewports))
+        
+        # 3. JavaScript para ocultar automatización
+        await page.add_init_script("""
+            // Sobrescribir webdriver
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            
+            // Sobrescribir plugins
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            
+            // Sobrescribir languages
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-US', 'en', 'ko']
+            });
+            
+            // Chrome específico
+            window.chrome = {
+                runtime: {}
+            };
+            
+            // Permisos
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({ state: Notification.permission }) :
+                    originalQuery(parameters)
+            );
+        """)
+        
+        logger.debug("✅ Página configurada con protección anti-detección")
+    
+    async def establish_session(self, page: Page, base_url: str) -> None:
+        """
+        Establece una sesión previa visitando la página principal
+        Esto ayuda a obtener cookies legítimas y reducir detección
+        
+        Args:
+            page: Página de Playwright
+            base_url: URL base del sitio (ej: "https://op.gg")
+        """
+        try:
+            logger.debug(f"🍪 Estableciendo sesión previa en {base_url}...")
+            
+            # Visitar homepage
+            await page.goto(base_url, wait_until="domcontentloaded", timeout=30000)
+            
+            # Simular lectura natural
+            await asyncio.sleep(random.uniform(2.0, 4.0))
+            
+            # Scroll aleatorio
+            for _ in range(2):
+                scroll_amount = random.randint(200, 500)
+                await page.evaluate(f"window.scrollBy(0, {scroll_amount});")
+                await asyncio.sleep(random.uniform(0.5, 1.0))
+            
+            # Click en algún elemento visible (si existe)
+            try:
+                await page.click("a", timeout=2000)
+                await asyncio.sleep(random.uniform(1.0, 2.0))
+            except:
+                pass  # No hay problema si no hay links
+            
+            logger.debug("✅ Sesión establecida con cookies")
+            
+        except Exception as e:
+            logger.debug(f"⚠ No se pudo establecer sesión previa: {e}")
     
     def detect_asian_characters(self, text: str) -> Dict[str, bool]:
         """
@@ -247,7 +378,7 @@ class BronzeIngestionScraper:
                 "game": "LOL",  # Ajustar según contexto
                 "server": self.region,
                 "profile_url": source_url,
-                "scraped_at": datetime.utcnow().isoformat(),
+                "scraped_at": datetime.now(timezone.utc).isoformat(),
                 "data_source": "liquipedia",
                 # Metadatos adicionales
                 "raw_country_text": country,
@@ -284,38 +415,78 @@ class BronzeIngestionScraper:
         page = await self.browser.new_page()
         
         try:
+            # Configurar página con stealth
+            await self.setup_stealth_page(page)
+            
+            # WORKAROUND: Establecer sesión previa para obtener cookies legítimas
+            # Esto reduce la probabilidad de 403 Error de WAF
+            try:
+                await self.establish_session(page, f"https://{region_code}.op.gg")
+            except Exception as e:
+                logger.debug(f"⚠ Sesión previa falló, continuando: {e}")
+            
+            # Navegar con delays aleatorios
+            logger.debug(f"🔗 Navegando a leaderboards...")
             await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(3)  # Esperar carga de contenido
+            
+            # Delay aleatorio LARGO para OP.GG (5-10 segundos) - evitar detección WAF
+            logger.debug(f"⏱ Delay largo (5-10s) para evitar detección...")
+            await asyncio.sleep(random.uniform(5.0, 10.0))
+            
+            # Scroll aleatorio (simular lectura)
+            await page.evaluate("window.scrollTo(0, Math.random() * 500);")
+            await asyncio.sleep(random.uniform(1.0, 2.5))
+            
+            # Esperar a que cargue contenido dinámico
+            await page.wait_for_timeout(2000)
             
             # OP.GG usa estructura de tabla dinámica
             # Selector puede variar - ajustar según UI actual
+            # Intentar múltiples selectores de fallback
             player_rows = await page.query_selector_all("[data-summoner-id]")
             
             if not player_rows:
-                # Fallback: buscar por clase común
                 player_rows = await page.query_selector_all("tr.ranked-player")
+            
+            if not player_rows:
+                # Más fallbacks para diferentes versiones de OP.GG
+                player_rows = await page.query_selector_all("table tbody tr")
+            
+            if not player_rows:
+                # Último intento: buscar por estructura CSS común
+                player_rows = await page.query_selector_all(".leaderboard-row, .player-row, .summoner-row")
             
             logger.info(f"📊 Encontrados {len(player_rows)} jugadores en OP.GG")
             
             for i, row in enumerate(player_rows[:limit], 1):
                 try:
-                    # Extraer nickname
-                    nickname_elem = await row.query_selector(".summoner-name, .player-name")
-                    nickname = ""
-                    if nickname_elem:
-                        nickname = await nickname_elem.inner_text()
+                    # Delay aleatorio entre jugadores (0.3-0.8s) para parecer humano
+                    if i > 1:
+                        await asyncio.sleep(random.uniform(0.3, 0.8))
                     
-                    # Extraer rank
-                    rank_elem = await row.query_selector(".tier, .rank")
+                    # Extraer nickname con múltiples selectores de fallback
+                    nickname = ""
+                    for selector in [".summoner-name", ".player-name", ".name", "a[href*='summoner']"]:
+                        nickname_elem = await row.query_selector(selector)
+                        if nickname_elem:
+                            nickname = await nickname_elem.inner_text()
+                            break
+                    
+                    # Extraer rank con múltiples selectores
                     rank = ""
-                    if rank_elem:
-                        rank = await rank_elem.inner_text()
+                    for selector in [".tier", ".rank", ".rating", "[class*='tier']"]:
+                        rank_elem = await row.query_selector(selector)
+                        if rank_elem:
+                            rank = await rank_elem.inner_text()
+                            break
                     
                     # Extraer LP (League Points)
-                    lp_elem = await row.query_selector(".lp, .points")
                     lp = ""
-                    if lp_elem:
-                        lp = await lp_elem.inner_text()
+                    for selector in [".lp", ".points", ".league-points", "[class*='lp']"]:
+                        lp_elem = await row.query_selector(selector)
+                        if lp_elem:
+                            lp = await lp_elem.inner_text()
+                            break
                     
                     # Crear registro crudo
                     raw_data = {
@@ -328,7 +499,7 @@ class BronzeIngestionScraper:
                         "game": "LOL",
                         "server": self.region,
                         "profile_url": url,
-                        "scraped_at": datetime.utcnow().isoformat(),
+                        "scraped_at": datetime.now(timezone.utc).isoformat(),
                         "data_source": "opgg",
                         "has_asian_characters": self.detect_asian_characters(nickname)["has_asian"]
                     }
@@ -336,19 +507,110 @@ class BronzeIngestionScraper:
                     players_data.append(raw_data)
                     self.scraped_count += 1
                     
+                    # Log cada 5 jugadores para monitoreo
+                    if i % 5 == 0:
+                        logger.debug(f"   Procesados {i}/{min(limit, len(player_rows))} jugadores...")
+                    
+                    # Scroll aleatorio cada 10 jugadores (simular lectura natural)
+                    if i % 10 == 0:
+                        scroll_amount = random.randint(100, 300)
+                        await page.evaluate(f"window.scrollBy(0, {scroll_amount});")
+                        await asyncio.sleep(random.uniform(0.2, 0.5))
+                    
                 except Exception as e:
                     self.error_count += 1
                     logger.debug(f"⚠ Error procesando jugador {i}: {e}")
                     continue
             
-            logger.success(f"✓ Scraped {len(players_data)} jugadores de OP.GG")
+            if len(players_data) > 0:
+                logger.success(f"✓ Scraped {len(players_data)} jugadores de OP.GG")
+            else:
+                logger.warning("⚠ No se encontraron jugadores. Posible cambio en estructura HTML o bloqueo anti-bot")
             
         except Exception as e:
             logger.error(f"❌ Error scraping OP.GG: {e}")
+            logger.debug(f"   URL: {url}")
+            logger.debug(f"   User-Agent: {self.user_agent}")
         finally:
             await page.close()
         
+        # 🔄 FALLBACK AUTOMÁTICO: Si scraping falló, usar Riot Games Official API
+        if len(players_data) == 0:
+            logger.info("🔄 Activando fallback: Riot Games Official API...")
+            players_data = await self._fallback_riot_api(game, limit)
+        
         return players_data
+    
+    async def _fallback_riot_api(self, game: str = "lol", limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Fallback GRATUITO: Usa Riot Games Official API cuando scraping falla
+        
+        Args:
+            game: Juego (actualmente solo 'lol')
+            limit: Número de jugadores a obtener
+            
+        Returns:
+            Lista de datos crudos en formato compatible con bronze_raw_data
+        """
+        if game != "lol":
+            logger.warning(f"⚠️ Riot API solo soporta LoL actualmente (solicitado: {game})")
+            return []
+        
+        # Verificar API key
+        api_key = settings.riot_api_key
+        if not api_key or api_key == "your-riot-api-key-here":
+            logger.warning("⚠️ RIOT_API_KEY no configurada - fallback no disponible")
+            logger.info("💡 Configura RIOT_API_KEY en .env para usar fallback automático")
+            logger.info("   Obtén tu API key gratis en: https://developer.riotgames.com/")
+            return []
+        
+        try:
+            # Import dinámico para evitar dependencias circulares
+            from riot_api_client import fetch_players_from_riot_api
+            
+            logger.info(f"🎮 Obteniendo jugadores desde Riot API (región: {self.region})...")
+            players = await fetch_players_from_riot_api(
+                region=self.region,
+                api_key=api_key,
+                limit=limit
+            )
+            
+            if not players:
+                logger.warning("⚠️ Riot API no retornó jugadores")
+                return []
+            
+            # Convertir PlayerProfile a formato de bronze_raw_data
+            players_data = []
+            for player in players:
+                raw_data = {
+                    "nickname": player.player_name,
+                    "player_id": player.player_name,
+                    "region": player.region,
+                    "country": player.region,
+                    "rank": f"{player.tier} #{player.rank}",
+                    "lp": str(player.lp),
+                    "win_rate": f"{player.win_rate}%",
+                    "games_played": str(player.games_played),
+                    "game": "LOL",
+                    "server": player.region,
+                    "profile_url": player.source_url,
+                    "scraped_at": player.scraped_at.isoformat(),
+                    "data_source": "riot_api",
+                    "has_asian_characters": self.detect_asian_characters(player.player_name)["has_asian"]
+                }
+                players_data.append(raw_data)
+                self.scraped_count += 1
+            
+            logger.success(f"✅ {len(players_data)} jugadores obtenidos desde Riot API (fallback)")
+            return players_data
+        
+        except ImportError:
+            logger.error("❌ No se pudo importar riot_api_client")
+            return []
+        
+        except Exception as e:
+            logger.error(f"❌ Error en fallback de Riot API: {e}")
+            return []
     
     def insert_to_bronze(self, players_data: List[Dict[str, Any]]) -> int:
         """

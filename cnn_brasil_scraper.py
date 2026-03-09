@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any
 from playwright.async_api import async_playwright, Browser, Page, ProxySettings
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from datetime import datetime
+from datetime import datetime, timezone
 
 from models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
 from country_detector import detect_country
@@ -247,7 +247,7 @@ class CNNBrasilNinjaScraper:
             raw_data = {
                 **player_data,
                 "tags": tags,
-                "scraped_at": datetime.utcnow().isoformat(),
+                "scraped_at": datetime.now(timezone.utc).isoformat(),
             }
             
             # Insertar en Bronze (trigger automático normaliza a Silver)
@@ -275,7 +275,7 @@ class CNNBrasilNinjaScraper:
         """
         logger.info("🥷 Iniciando scraping ninja de CNN Brasil...")
         
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         try:
             # Configurar proxy si está habilitado
@@ -308,7 +308,7 @@ class CNNBrasilNinjaScraper:
                 # Mini delay entre upserts
                 await asyncio.sleep(0.1)
             
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
             
             stats = {

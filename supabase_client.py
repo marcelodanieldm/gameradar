@@ -4,7 +4,7 @@ Manejo de capas Bronze/Silver/Gold
 """
 from typing import List, Dict, Any, Optional
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from models import PlayerProfile, BronzeRecord
@@ -314,7 +314,7 @@ class SupabaseClient:
                     .update({
                         "stats": stats,
                         "top_champions": top_champions,
-                        "updated_at": datetime.utcnow().isoformat()
+                        "updated_at": datetime.now(timezone.utc).isoformat()
                     }) \
                     .eq("id", player_id) \
                     .execute()
@@ -403,7 +403,7 @@ class SupabaseClient:
                     "enrichment_notes": enrichment_notes,
                     "is_verified": True,
                     "verified_by": verified_by,
-                    "verification_date": datetime.utcnow().isoformat()
+                    "verification_date": datetime.now(timezone.utc).isoformat()
                 }).execute()
                 
                 logger.success(f"✓ Jugador '{player['nickname']}' promocionado a Gold")
