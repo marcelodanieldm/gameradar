@@ -484,6 +484,272 @@ CREATE POLICY "Enable write access for admin only" ON gold_verified_players
     FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 
 -- =====================================================
+-- SPRINT 3: CASHFLOW Y ENGAGEMENT
+-- Tablas para Pagos Regionales y Sistema Talent-Ping
+-- =====================================================
+
+-- =====================================================
+-- PAYMENT TRANSACTIONS
+-- Soporta Razorpay (India/UPI) y Stripe (Global)
+-- =====================================================
+CREATE TABLE payment_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255) NOT NULL,
+    
+    -- Payment details
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL, -- INR, USD, KRW, JPY, etc.
+    region VARCHAR(50) NOT NULL, -- india, korea, japan, global, etc.
+    
+    -- Gateway information
+    gateway VARCHAR(20) NOT NULL, -- 'razorpay' or 'stripe'
+    order_id VARCHAR(255), -- Razorpay order_id or Stripe session_id
+    payment_id VARCHAR(255), -- Payment ID after completion
+    payment_method VARCHAR(50), -- upi, card, netbanking, kakao_pay, etc.
+    
+    -- Status tracking
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, completed, failed, refunded
+    error_message TEXT,
+    
+    -- Metadata
+    metadata JSONB,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE,
+    
+    CONSTRAINT check_payment_status CHECK (status IN ('pending', 'completed', 'failed', 'refunded'))
+);
+
+-- Índices para búsqueda rápida de transacciones
+CREATE INDEX idx_payment_user_id ON payment_transactions(user_id);
+CREATE INDEX idx_payment_status ON payment_transactions(status);
+CREATE INDEX idx_payment_gateway ON payment_transactions(gateway);
+CREATE INDEX idx_payment_created_at ON payment_transactions(created_at DESC);
+CREATE INDEX idx_payment_region ON payment_transactions(region);
+
+COMMENT ON TABLE payment_transactions IS 'Sprint 3: Transacciones de pago regionales (Razorpay/Stripe)';
+
+
+-- =====================================================
+-- USER SUBSCRIPTIONS
+-- Gestión de suscripciones premium
+-- =====================================================
+CREATE TABLE user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255) NOT NULL UNIQUE,
+    
+    -- Subscription details
+    subscription_type VARCHAR(50) NOT NULL, -- free, premium, elite, etc.
+    status VARCHAR(20) NOT NULL DEFAULT 'active', -- active, expired, cancelled
+    
+    -- Features access
+    features JSONB, -- { "talent_ping": true, "advanced_analytics": true, etc. }
+    
+    -- Timestamps
+    activated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE,
+    cancelled_at TIMESTAMP WITH TIME ZONE,
+    
+    CONSTRAINT check_subscription_status CHECK (status IN ('active', 'expired', 'cancelled'))
+);
+
+CREATE INDEX idx_subscription_user_id ON user_subscriptions(user_id);
+CREATE INDEX idx_subscription_status ON user_subscriptions(status);
+CREATE INDEX idx_subscription_expires_at ON user_subscriptions(expires_at);
+
+COMMENT ON TABLE user_subscriptions IS 'Sprint 3: Gestión de suscripciones de usuarios';
+
+
+-- =====================================================
+-- TALENT PING SUBSCRIPTIONS
+-- Sistema de alertas "Talent-Ping" con preferencias culturales
+-- =====================================================
+CREATE TABLE talent_ping_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255) NOT NULL UNIQUE,
+    
+    -- Regional preferences
+    region VARCHAR(50) NOT NULL, -- india, vietnam, korea, japan, china, global
+    
+    -- Notification channels (culturally adapted)
+    notification_channels TEXT[] NOT NULL, -- ['email', 'whatsapp', 'telegram', 'in_app']
+    
+    -- Contact information (encrypted in production)
+    email VARCHAR(255),
+    whatsapp_number VARCHAR(20), -- For India/Vietnam
+    telegram_id VARCHAR(100), -- For India/Vietnam
+    
+    -- Alert preferences
+    alert_frequency VARCHAR(20) DEFAULT 'instant', -- instant, daily, weekly
+    alert_criteria JSONB, -- Custom criteria for alerts
+    
+    -- Status
+    is_active BOOLEAN DEFAULT true,
+    
+    -- Timestamps
+    subscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    unsubscribed_at TIMESTAMP WITH TIME ZONE,
+    last_alert_sent_at TIMESTAMP WITH TIME ZONE,
+    
+    CONSTRAINT check_alert_frequency CHECK (alert_frequency IN ('instant', 'daily', 'weekly'))
+);
+
+CREATE INDEX idx_talent_ping_user_id ON talent_ping_subscriptions(user_id);
+CREATE INDEX idx_talent_ping_region ON talent_ping_subscriptions(region);
+CREATE INDEX idx_talent_ping_active ON talent_ping_subscriptions(is_active);
+CREATE INDEX idx_talent_ping_frequency ON talent_ping_subscriptions(alert_frequency);
+
+COMMENT ON TABLE talent_ping_subscriptions IS 'Sprint 3: Subscripciones a alertas Talent-Ping (WhatsApp/Telegram/Email)';
+
+
+-- =====================================================
+-- TALENT PING ALERTS LOG
+-- Historial de alertas enviadas
+-- =====================================================
+CREATE TABLE talent_ping_alerts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255) NOT NULL,
+    
+    -- Player information
+    player_name VARCHAR(255) NOT NULL,
+    player_position VARCHAR(50),
+    similarity_score DECIMAL(5, 4), -- 0.0000 to 1.0000
+    
+    -- Alert details
+    channels_sent TEXT[], -- ['whatsapp', 'email', etc.]
+    delivery_status JSONB, -- { "whatsapp": true, "email": false, etc. }
+    
+    -- Timestamps
+    sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- User interaction
+    opened_at TIMESTAMP WITH TIME ZONE,
+    clicked_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_alerts_user_id ON talent_ping_alerts(user_id);
+CREATE INDEX idx_alerts_sent_at ON talent_ping_alerts(sent_at DESC);
+CREATE INDEX idx_alerts_player ON talent_ping_alerts(player_name);
+
+COMMENT ON TABLE talent_ping_alerts IS 'Sprint 3: Historial de alertas Talent-Ping enviadas';
+
+
+-- =====================================================
+-- REGIONAL PAYMENT METRICS (Analytics)
+-- Métricas de conversión por región para optimizar pagos
+-- =====================================================
+CREATE TABLE regional_payment_metrics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Regional data
+    region VARCHAR(50) NOT NULL,
+    gateway VARCHAR(20) NOT NULL,
+    payment_method VARCHAR(50),
+    
+    -- Metrics
+    total_transactions INT DEFAULT 0,
+    successful_transactions INT DEFAULT 0,
+    failed_transactions INT DEFAULT 0,
+    total_revenue DECIMAL(15, 2) DEFAULT 0,
+    
+    -- Conversion rates
+    conversion_rate DECIMAL(5, 4), -- Calculated: successful/total
+    
+    -- Time period
+    period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    
+    -- Timestamps
+    calculated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_payment_metrics_region ON regional_payment_metrics(region);
+CREATE INDEX idx_payment_metrics_period ON regional_payment_metrics(period_start, period_end);
+
+COMMENT ON TABLE regional_payment_metrics IS 'Sprint 3: Métricas de conversión de pagos por región';
+
+
+-- =====================================================
+-- RLS (Row Level Security) Policies - Sprint 3
+-- =====================================================
+
+ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE talent_ping_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE talent_ping_alerts ENABLE ROW LEVEL SECURITY;
+
+-- Users can only see their own data
+CREATE POLICY "Users can view own payments" ON payment_transactions
+    FOR SELECT USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can view own subscription" ON user_subscriptions
+    FOR SELECT USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can manage own talent ping subscription" ON talent_ping_subscriptions
+    FOR ALL USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can view own alerts" ON talent_ping_alerts
+    FOR SELECT USING (user_id = auth.uid()::text);
+
+-- Admin access
+CREATE POLICY "Admin can view all payments" ON payment_transactions
+    FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+
+CREATE POLICY "Admin can manage all subscriptions" ON user_subscriptions
+    FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
+
+
+-- =====================================================
+-- FUNCTIONS FOR SPRINT 3
+-- =====================================================
+
+-- Function to update payment metrics
+CREATE OR REPLACE FUNCTION update_payment_metrics()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+        INSERT INTO regional_payment_metrics (
+            region, 
+            gateway, 
+            payment_method,
+            total_transactions,
+            successful_transactions,
+            total_revenue,
+            period_start,
+            period_end
+        )
+        VALUES (
+            NEW.region,
+            NEW.gateway,
+            NEW.payment_method,
+            1,
+            1,
+            NEW.amount,
+            date_trunc('day', NEW.created_at),
+            date_trunc('day', NEW.created_at) + interval '1 day'
+        )
+        ON CONFLICT (region, gateway, payment_method, period_start, period_end) 
+        DO UPDATE SET
+            total_transactions = regional_payment_metrics.total_transactions + 1,
+            successful_transactions = regional_payment_metrics.successful_transactions + 1,
+            total_revenue = regional_payment_metrics.total_revenue + EXCLUDED.total_revenue,
+            conversion_rate = (regional_payment_metrics.successful_transactions + 1.0) / 
+                            (regional_payment_metrics.total_transactions + 1.0);
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for payment metrics
+CREATE TRIGGER trigger_update_payment_metrics
+    AFTER UPDATE ON payment_transactions
+    FOR EACH ROW
+    WHEN (NEW.status = 'completed' AND OLD.status != 'completed')
+    EXECUTE FUNCTION update_payment_metrics();
+
+
+-- =====================================================
 -- COMPLETADO
 -- =====================================================
 

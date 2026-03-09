@@ -19,14 +19,17 @@ gameradar/
 │   ├── proxy_rotator.py             # 🔄 Sistema de rotación de proxies
 │   ├── supabase_client.py           # 💾 Cliente de Supabase (Bronze/Silver/Gold)
 │   ├── airtable_client.py           # 📤 Cliente de Airtable
-│   └── pipeline.py                  # 🚀 Orquestación del flujo completo
+│   ├── pipeline.py                  # 🚀 Orquestación del flujo completo
+│   ├── payment_gateway.py           # 💳 Sprint 3: Razorpay + Stripe
+│   ├── notification_service.py      # 🔔 Sprint 3: WhatsApp/Telegram/Email
+│   └── api_routes_sprint3.py        # 🌐 Sprint 3: FastAPI endpoints
 │
 ├── 🧪 Testing & Examples
 │   ├── test_ninja_scraper.py        # 🧪 Tests del scraper ninja
 │   └── examples.py                  # 📝 7 ejemplos de uso
 │
 ├── 🗄️ Database
-│   └── database_schema.sql          # 🏛️ Schema PostgreSQL (Bronze/Silver/Gold)
+│   └── database_schema.sql          # 🏛️ Schema PostgreSQL (Bronze/Silver/Gold + Sprint 3)
 │
 ├── ⚙️ GitHub Actions
 │   └── .github/workflows/
@@ -38,11 +41,23 @@ gameradar/
 │   ├── NINJA_SUMMARY.md            # 📊 Resumen ejecutivo
 │   ├── GITHUB_SETUP.md             # 🚀 Setup de GitHub Actions
 │   ├── COMMANDS.md                  # 💻 Comandos útiles
+│   ├── SPRINT3_CASHFLOW_ENGAGEMENT.md  # 💰 Sprint 3: Pagos & Alertas
+│   ├── SPRINT3_QUICK_REFERENCE.md  # ⚡ Sprint 3: Quick Reference
 │   └── INDEX.md                     # 📂 Este archivo
 │
+├── 🎨 Frontend (Next.js)
+│   ├── components/
+│   │   ├── RegionalPayment.tsx     # 💳 Sprint 3: Payment UI
+│   │   └── TalentPingSubscription.tsx  # 🔔 Sprint 3: Alert subscriptions
+│   └── app/api/
+│       ├── payment/                 # 💳 Payment endpoints
+│       └── talent-ping/             # 🔔 Notification endpoints
+│
 └── 🔧 Configuración
-    ├── requirements.txt             # 📦 Dependencias Python
+    ├── requirements.txt             # 📦 Dependencias Python (+ Sprint 3)
     ├── .env.example                 # 🔐 Template de variables de entorno
+    ├── setup_sprint3.sh            # 🚀 Setup script (Linux/Mac)
+    ├── setup_sprint3.bat           # 🚀 Setup script (Windows)
     └── .gitignore                   # 🚫 Archivos ignorados por Git
 ```
 
@@ -60,6 +75,13 @@ gameradar/
 2. **scrapers.py** - Lógica de scraping
 3. **cnn_brasil_scraper.py** - Scraper ninja
 4. **pipeline.py** - Flujo completo
+5. **payment_gateway.py** - Sprint 3: Pagos regionales
+6. **notification_service.py** - Sprint 3: Sistema de alertas
+
+### 💳 Para Sprint 3 (Cashflow & Engagement):
+1. **SPRINT3_CASHFLOW_ENGAGEMENT.md** - Documentación completa
+2. **SPRINT3_QUICK_REFERENCE.md** - Quick reference
+3. **setup_sprint3.sh / .bat** - Setup automatizado
 
 ### 🧪 Para testing:
 1. **test_ninja_scraper.py** - Ejecutar tests
@@ -104,6 +126,13 @@ pipeline.py → Scraping → Bronze → Silver → Gold → Airtable
 supabase_client.py → Queries → Visualización
 ```
 
+### Flujo 6: Sprint 3 - Cashflow & Engagement
+```
+User → RegionalPayment → Payment Gateway (Razorpay/Stripe) → Database
+User → TalentPingSubscription → Notification Service → WhatsApp/Telegram/Email
+Backend → Talent Alert → Multi-channel Delivery → PDF Reports (Professional)
+```
+
 ---
 
 ## 🔑 Archivos Clave por Funcionalidad
@@ -129,6 +158,16 @@ supabase_client.py → Queries → Visualización
 ### 🧪 Testing
 - `test_ninja_scraper.py` - Tests automatizados
 - `examples.py` - Ejemplos de uso
+
+### 💳 Sprint 3: Cashflow
+- `payment_gateway.py` - Razorpay + Stripe integration
+- `frontend/components/RegionalPayment.tsx` - Payment UI
+- `frontend/app/api/payment/` - Payment endpoints
+
+### 🔔 Sprint 3: Engagement
+- `notification_service.py` - WhatsApp/Telegram/Email + PDF
+- `frontend/components/TalentPingSubscription.tsx` - Alert subscription UI
+- `frontend/app/api/talent-ping/` - Notification endpoints
 
 ---
 
@@ -321,6 +360,15 @@ cat COMMANDS.md
 ```
 v1.0.0 - Initial release
 ├─ ✅ Base scrapers (OP.GG, Liquipedia)
+
+v2.0.0 - Sprint 3: Cashflow & Engagement
+├─ ✅ Regional payment gateways (Razorpay/Stripe)
+├─ ✅ UPI integration for India (80% of transactions)
+├─ ✅ Multi-channel notifications (WhatsApp/Telegram/Email)
+├─ ✅ Cultural UX/UI adaptation
+├─ ✅ PDF reports for professional markets
+├─ ✅ Payment & subscription database schema
+└─ ✅ FastAPI backend + Next.js frontend integration
 ├─ ✅ Supabase integration
 ├─ ✅ Airtable export
 └─ ✅ Pipeline orchestration

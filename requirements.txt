@@ -28,6 +28,18 @@ loguru==0.7.2
 # AI/ML - Embeddings
 openai==1.12.0
 
+# Sprint 3: Payment Gateways
+razorpay==1.4.2
+stripe==8.2.0
+
+# Sprint 3: Notifications
+requests==2.31.0
+reportlab==4.0.9
+
+# Sprint 3: API Backend
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+
 # Proxy Services (opcional)
 # bright-data==1.0.0
 # scraperapi-sdk==1.0.0

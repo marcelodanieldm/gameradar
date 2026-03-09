@@ -8,13 +8,13 @@ from typing import Optional
 class Settings(BaseSettings):
     """Configuración global de la aplicación"""
     
-    # Supabase
-    supabase_url: str
-    supabase_key: str
+    # Supabase (opcional - usa modo local si no está configurado)
+    supabase_url: str = "http://localhost:54321"
+    supabase_key: str = "local-mock-key"
     
-    # Airtable
-    airtable_api_key: str
-    airtable_base_id: str
+    # Airtable (opcional)
+    airtable_api_key: str = "local-mock-key"
+    airtable_base_id: str = "local-mock-base"
     airtable_table_name: str = "GameRadar_Players"
     
     # Scraper
