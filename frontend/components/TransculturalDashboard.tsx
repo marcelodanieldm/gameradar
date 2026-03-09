@@ -36,6 +36,7 @@ import {
   Award,
 } from "lucide-react";
 import { useCountryDetection } from "@/hooks/useCountryDetection";
+import DashboardHelp from "@/components/DashboardHelp";
 
 // Tipos de vista regional
 type RegionalView = "feed" | "dense" | "minimal" | "auto";
@@ -348,6 +349,19 @@ export default function TransculturalDashboard({
           <JapanMinimalistView players={sortedPlayers} />
         )}
       </main>
+
+      {/* Help Button */}
+      <DashboardHelp 
+        locale={
+          countryCode === 'CN' || countryCode === 'TW' ? 'zh' :
+          countryCode === 'KR' ? 'ko' :
+          countryCode === 'JP' ? 'ja' :
+          countryCode === 'IN' ? 'hi' :
+          countryCode === 'TH' ? 'th' :
+          countryCode === 'VN' ? 'vi' :
+          'en'
+        } 
+      />
     </div>
   );
 }

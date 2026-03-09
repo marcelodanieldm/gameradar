@@ -10,6 +10,34 @@
     "error": {
       "title": "加载选手失败",
       "retry": "重试"
+    },
+    "help": {
+      "title": "仪表板指南",
+      "description": "欢迎使用游戏雷达AI！此仪表板帮助您发现和分析亚洲顶级电竞人才。",
+      "whatIs": "这个仪表板是什么？",
+      "whatIsDesc": "一个全面的专业游戏人才挖掘平台。实时查看选手统计数据、排名和表现指标。",
+      "metrics": "理解指标",
+      "metricsDesc": "关键绩效指标说明：",
+      "talentScore": "天赋评分",
+      "talentScoreDesc": "选手综合评分(0-100)，基于胜率、KDA、稳定性和游戏数量。分数越高越好。",
+      "winRate": "胜率 (WR%)",
+      "winRateDesc": "获胜比赛的百分比。职业选手通常有55%以上的胜率。",
+      "kda": "KDA (击杀/死亡/助攻)",
+      "kdaDesc": "战斗效率比率。3.0+为优秀，5.0+为精英级别。",
+      "gamesPlayed": "游戏场次",
+      "gamesPlayedDesc": "总排位赛场次。游戏越多，统计数据越可靠。",
+      "rank": "段位/等级",
+      "rankDesc": "当前竞技排名：王者(前300名)、宗师、大师、钻石。",
+      "viewModes": "查看模式",
+      "viewModesDesc": "选择如何显示选手：",
+      "autoMode": "自动模式",
+      "autoModeDesc": "自动适应您的地区（移动设备多的地区为信息流，东亚为密集，日本为简洁）。",
+      "feedMode": "信息流模式",
+      "feedModeDesc": "社交媒体风格的垂直信息流，适合移动设备查看。",
+      "denseMode": "密集模式",
+      "denseModeDesc": "紧凑的表格，信息密度最大，东亚地区首选。",
+      "minimalMode": "简洁模式",
+      "minimalModeDesc": "清爽、无干扰的界面，带有有用的提示。"
     }
   },
   "table": {

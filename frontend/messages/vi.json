@@ -10,6 +10,34 @@
     "error": {
       "title": "Không thể tải người chơi",
       "retry": "Thử lại"
+    },
+    "help": {
+      "title": "Trợ Giúp Dashboard",
+      "description": "Hướng dẫn sử dụng dashboard GameRadar, hiểu các chỉ số và tìm kiếm game thủ hàng đầu",
+      "whatIs": "Dashboard này là gì?",
+      "whatIsDesc": "GameRadar là nền tảng được hỗ trợ bởi AI để khám phá và phân tích các tài năng e-sports hàng đầu khắp châu Á. Chúng tôi sử dụng dữ liệu thời gian thực và phân tích AI từ League of Legends để theo dõi các game thủ Challenger, Grandmaster và Master.",
+      "metrics": "Hiểu Các Chỉ Số",
+      "metricsDesc": "Ý nghĩa của mỗi chỉ số và cách nhận diện game thủ giỏi nhất:",
+      "talentScore": "Điểm Tài Năng",
+      "talentScoreDesc": "Đánh giá 0-100 do AI tạo ra, kết hợp tỉ lệ thắng, KDA, số trận và xếp hạng. 80+ là trình độ chuyên nghiệp, 90+ là ưu tú, 95+ là tài năng đẳng cấp thế giới.",
+      "winRate": "Tỉ Lệ Thắng",
+      "winRateDesc": "Phần trăm trận thắng trong các trận đấu gần đây. 50% là trung bình, 55%+ là trình độ pro, 60%+ là hiệu suất xuất sắc. Ở bậc Challenger, chênh lệch 1% đã có ý nghĩa lớn.",
+      "kda": "KDA (Tỉ Số Kill/Death/Assist)",
+      "kdaDesc": "Đo lường hiệu quả chiến đấu. Công thức: (Kill + Assist) / Death. 2.0 là vững, 3.0+ là xuất sắc, 5.0+ là đặc điểm của game thủ ưu tú. Khác nhau theo vị trí, nhưng KDA cao cho thấy ảnh hưởng ổn định.",
+      "gamesPlayed": "Số Trận Đã Chơi",
+      "gamesPlayedDesc": "Số trận xếp hạng đã chơi trong mùa hiện tại. Nhiều trận hơn = thống kê đáng tin cậy hơn. Game thủ chuyên nghiệp thường chơi 500+ đến 1000+ trận mỗi mùa.",
+      "rank": "Xếp Hạng/Bậc",
+      "rankDesc": "Bậc cạnh tranh: Challenger (top 300 mỗi khu vực), Grandmaster, Master, Diamond, v.v. Challenger chiếm dưới 0.001% tổng số game thủ, đại diện cho tài năng pro ưu tú.",
+      "viewModes": "Chế Độ Xem",
+      "viewModesDesc": "Tùy chỉnh hiển thị dashboard theo sở thích của bạn:",
+      "autoMode": "Chế Độ Tự Động",
+      "autoModeDesc": "Tự động chọn chế độ xem tốt nhất dựa trên thiết bị, kích thước màn hình và khu vực của bạn. Được khuyến nghị cho hầu hết người dùng.",
+      "feedMode": "Chế Độ Feed",
+      "feedModeDesc": "Bố cục thẻ kiểu mạng xã hội với thông tin chi tiết về game thủ, bộ tướng và thống kê trực quan. Lý tưởng cho di động và máy tính bảng.",
+      "denseMode": "Chế Độ Dày Đặc",
+      "denseModeDesc": "Bố cục bảng gọn gàng hiển thị nhiều game thủ cùng lúc. Tuyệt vời cho phân tích dữ liệu và so sánh nhanh nhiều game thủ.",
+      "minimalMode": "Chế Độ Tối Giản",
+      "minimalModeDesc": "Giao diện sạch sẽ, đơn giản chỉ làm nổi bật các chỉ số quan trọng nhất. Lý tưởng cho quyết định nhanh và điều hướng dễ dàng."
     }
   },
   "table": {
@@ -36,7 +64,8 @@
     "champions": "Tướng",
     "topChampions": "Tướng Chính",
     "contactWhatsApp": "WhatsApp",
-    "viewProfile": "Xem Hồ Sơ"  },
+    "viewProfile": "Xem Hồ Sơ"
+  },
   "search": {
     "placeholder": "Tìm kiếm ngôi sao tiếp theo của bạn...",
     "search": "Tìm kiếm",
@@ -46,7 +75,8 @@
     "tryDifferent": "Thử tìm kiếm khác",
     "errorMinLength": "Nhập ít nhất 3 ký tự",
     "errorSearch": "Tìm kiếm thất bại. Vui lòng thử lại.",
-    "gameRadarScore": "GameRadar"  },
+    "gameRadarScore": "GameRadar"
+  },
   "streetScout": {
     "title": "Street Scout",
     "subtitle": "Khám phá ngôi sao mới nổi",
@@ -56,7 +86,8 @@
     "winRate": "Tỉ lệ thắng",
     "rank": "Xếp hạng",
     "topChampions": "Tướng chính",
-    "endOfList": "Bạn đã đến cuối danh sách"  },
+    "endOfList": "Bạn đã đến cuối danh sách"
+  },
   "eliteAnalyst": {
     "title": "Nhà Phân Tích Tinh Hoa",
     "subtitle": "So sánh và phân tích chuyên nghiệp",
@@ -74,7 +105,8 @@
     "topChampions": "Tướng chính",
     "skillRadar": "Radar Kỹ Năng",
     "metric": "Chỉ số",
-    "winner": "Người thắng"  },
+    "winner": "Người thắng"
+  },
   "discoveryHub": {
     "detectingRegion": "Đang phát hiện khu vực của bạn...",
     "errorTitle": "Lỗi tải người chơi",
@@ -82,7 +114,8 @@
     "autoMode": "Tự động",
     "streetMode": "Street",
     "eliteMode": "Elite",
-    "detectedRegion": "Khu vực"  },
+    "detectedRegion": "Khu vực"
+  },
   "marketplace": {
     "title": "Thị Trường Người Chơi",
     "subtitle": "Khám phá và kết nối với các tài năng",
@@ -94,5 +127,6 @@
     "rank": "Xếp hạng",
     "games": "Trận",
     "gamesPlayed": "trận đã chơi",
-    "viewProfile": "Xem Hồ Sơ"  }
+    "viewProfile": "Xem Hồ Sơ"
+  }
 }
