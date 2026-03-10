@@ -133,6 +133,76 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Core Services */}
+      <section className="py-20 px-4 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl font-bold text-white text-center mb-4">Our Core Services</h2>
+          <p className="text-slate-300 text-center mb-16 text-lg">Three powerful tools to transform your talent discovery process</p>
+          
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Global Scout Engine */}
+            <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur p-8 rounded-xl border border-blue-500/50 hover:border-blue-400 transition-all hover:transform hover:scale-105">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-2xl mr-4">
+                  🌐
+                </div>
+                <h3 className="text-2xl font-bold text-white">Global Scout Engine</h3>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wide mb-2">Technical</h4>
+                <p className="text-slate-300">Access to the normalized database of 5 regional markets (Silver Layer). Automatic transcultural data processing and unified player profiles.</p>
+              </div>
+              
+              <div className="border-t border-slate-600 pt-6">
+                <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide mb-2">Value</h4>
+                <p className="text-slate-200 font-medium">Eliminates the language barrier and chaos of different ranking systems. Scout globally with local precision.</p>
+              </div>
+            </div>
+
+            {/* Radar Intelligence */}
+            <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur p-8 rounded-xl border border-purple-500/50 hover:border-purple-400 transition-all hover:transform hover:scale-105">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl mr-4">
+                  🎯
+                </div>
+                <h3 className="text-2xl font-bold text-white">Radar Intelligence</h3>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-2">Technical</h4>
+                <p className="text-slate-300">AI-powered semantic search and comparative analysis engine using pgvector. Natural language queries with vector embeddings.</p>
+              </div>
+              
+              <div className="border-t border-slate-600 pt-6">
+                <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide mb-2">Value</h4>
+                <p className="text-slate-200 font-medium">Find "clones" of professional players at a fraction of their cost. Discover undervalued talent with similar playstyles.</p>
+              </div>
+            </div>
+
+            {/* Talent-Ping */}
+            <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur p-8 rounded-xl border border-orange-500/50 hover:border-orange-400 transition-all hover:transform hover:scale-105">
+              <div className="flex items-center mb-6">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-2xl mr-4">
+                  ⚡
+                </div>
+                <h3 className="text-2xl font-bold text-white">Talent-Ping Alerts</h3>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wide mb-2">Technical</h4>
+                <p className="text-slate-300">Real-time notification system via WhatsApp/Telegram. Instant alerts when emerging talents match your criteria.</p>
+              </div>
+              
+              <div className="border-t border-slate-600 pt-6">
+                <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide mb-2">Value</h4>
+                <p className="text-slate-200 font-medium">Sign prospects before their market price explodes. Never miss a rising star with 24/7 automated monitoring.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Value Proposition */}
       <section id="features" className="py-20 px-4 bg-slate-800/50">
         <div className="max-w-7xl mx-auto">

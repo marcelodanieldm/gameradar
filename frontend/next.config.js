@@ -6,17 +6,24 @@ const nextConfig = {
     }
   },
   images: {
-    domains: [
-      'avatars.githubusercontent.com',
-      'lh3.googleusercontent.com',
-      'static-cdn.jtvnw.net',
-      'i.imgur.com'
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'static-cdn.jtvnw.net'
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.imgur.com'
+      }
     ]
-  },
-  i18n: {
-    locales: ['en', 'ko', 'zh', 'hi', 'vi', 'th', 'ja'],
-    defaultLocale: 'en',
-    localeDetection: true
   }
 }
 
