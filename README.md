@@ -612,6 +612,121 @@ PlayerProfile(
 | **Valorant Tracker** | Asia | Valorant | 🚧 Pendiente |
 | **Dotabuff** | Asia | Dota 2 | 🚧 Pendiente |
 
+## 🌍 Multi-Region Strategic Ingestor
+
+**Sistema de grado militar** para ingesta simultánea de múltiples fuentes estratégicas globales con fallback automático, circuit breakers, y anti-detección regional.
+
+### 📌 Características Principales
+
+- ✅ **7 Fuentes Estratégicas**:
+  - **Wanplus** (China): LPL/KPL stats con micro-métricas (APM, Gold/Min, DMG%)
+  - **The Esports Club** (India): API oficial con métricas de consistencia
+  - **Soha Game** (Vietnam): Social sentiment (Gamek.vn network)
+  - **Steam Web API** (SEA Dota 2): MMR, GPM, XPM oficiales
+  - **Loot.bet** (Global): Betting odds como proxy de rendimiento
+  - **Riot Games Shards** (JP/KR): API oficial Riot
+  - **UniversalAggregator** (Fallback): OP.GG + Dak.gg integrados
+
+- ✅ **Fallback Automático en Cascada**:
+  - China: `Wanplus → Riot KR → Loot.bet`
+  - Korea: `Riot KR → Dak.gg → OP.GG → Loot.bet`
+  - India: `TEC India → Riot KR → Loot.bet`
+  - Vietnam: `Soha Game → Riot KR → OP.GG → Loot.bet`
+  - Japan: `Riot JP → Riot KR → Loot.bet`
+  - SEA: `Steam API → Riot SEA → Loot.bet`
+
+- ✅ **Anti-Detección Regional**:
+  - **AdvancedHeaderRotator**: 7 perfiles regionales (China/Korea/Japan/India/Vietnam/SEA/Global)
+  - User-Agents auténticos por región (QQBrowser para China, Coc Coc para Vietnam)
+  - Delays específicos: China 3-7s (GFW evasion), Korea 2-5s, Global 1-3s
+  - Accept-Language automático por región
+
+- ✅ **Resiliencia de Grado Militar**:
+  - **Circuit Breaker**: Threshold 5 fallos → 60s timeout
+  - **SimpleCache**: TTL 300s para reducir requests redundantes
+  - **ExponentialBackoffHandler**: Jitter aleatorio por región
+  - **Concurrency Control**: Semaphore limitado a 10 requests concurrentes
+
+- ✅ **Serverless Architecture (GitHub Actions)**:
+  - Ejecución automática cada 6 horas (00:00, 06:00, 12:00, 18:00 UTC)
+  - Manual trigger con inputs configurables (regiones, players_per_region, enable_fallback)
+  - **Costo: $0/mes** (usa ~600 de 2,000 minutos gratis)
+  - Timeout 30 minutos para prevenir costos
+
+- ✅ **Analytics Layer (Supabase)**:
+  - Tabla `ingestion_logs` con métricas JSONB por sesión
+  - 4 vistas analíticas (global_metrics, source_metrics, daily_trend, recent_sessions)
+  - 3 funciones helper: `get_session_metrics()`, `cleanup_old_ingestion_logs()`, `get_ingestion_health_status()`
+
+### 📖 Documentación Completa
+
+Ver [MULTI_REGION_INGESTOR.md](MULTI_REGION_INGESTOR.md) para:
+- Arquitectura detallada de cada adapter
+- Guía de configuración completa
+- Ejemplos de uso (local, GitHub Actions, convenience function)
+- Sistema de fallback (cascade/parallel/smart strategies)
+- Monitoreo y troubleshooting
+- Guía de extensibilidad (añadir nuevo source en 5 pasos)
+
+### 🚀 Inicio Rápido
+
+**1. Configurar API Keys:**
+
+```bash
+# .env
+RIOT_API_KEY=your-riot-api-key
+STEAM_API_KEY=your-steam-api-key
+```
+
+**2. Ejecutar Schema en Supabase:**
+
+```bash
+# Ejecutar ingestion_logs_schema.sql en Supabase SQL Editor
+```
+
+**3. Configurar Players:**
+
+```bash
+cp players_to_ingest.example.json players_to_ingest.json
+# Editar con tus jugadores
+```
+
+**4. Ejecutar Ingesta:**
+
+```python
+import asyncio
+from MultiRegionIngestor import run_scheduled_ingestion
+
+asyncio.run(run_scheduled_ingestion(
+    config_path="ingestion_config.example.json",
+    players_path="players_to_ingest.json"
+))
+```
+
+**5. GitHub Actions:**
+
+- Configurar Secrets: `SUPABASE_URL`, `SUPABASE_KEY`, `RIOT_API_KEY`, `STEAM_API_KEY`
+- El workflow `.github/workflows/multi_region_ingestion.yml` ejecuta automáticamente
+
+### 📊 Monitoreo
+
+**Consultas SQL rápidas:**
+
+```sql
+-- Ver últimas sesiones
+SELECT * FROM v_ingestion_recent_sessions;
+
+-- Métricas globales
+SELECT * FROM v_ingestion_global_metrics;
+
+-- Performance por fuente
+SELECT * FROM v_ingestion_source_metrics 
+ORDER BY avg_success_rate DESC;
+
+-- Health status del sistema
+SELECT * FROM get_ingestion_health_status();
+```
+
 ### 🥷 Ninja Scraper (GitHub Actions)
 
 El scraper ninja automatizado se ejecuta cada 6 horas:
