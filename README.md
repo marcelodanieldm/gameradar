@@ -55,6 +55,7 @@ gameradar/
 ├── config.py                    # Configuración centralizada
 ├── country_detector.py          # Detección de país por bandera/servidor
 ├── scrapers.py                  # Scrapers para Liquipedia, OP.GG, etc
+├── RegionalConnectors.py        # 🌏 Conectores regionales (Dak.gg, ScoreGG)
 ├── bronze_ingestion.py          # 📦 Motor de ingesta Bronze (multi-fuente)
 ├── cnn_brasil_scraper.py        # 🥷 Ninja scraper para CNN Brasil
 ├── proxy_rotator.py             # Sistema de rotación de proxies
@@ -279,7 +280,42 @@ async def run_pipeline():
 asyncio.run(run_pipeline())
 ```
 
-### Ejemplo 3: Consultar datos de Supabase
+### Ejemplo 3: Regional Connectors (Dak.gg y ScoreGG)
+
+```python
+import asyncio
+from RegionalConnectors import scrape_dak_gg_players, scrape_scoregg_players
+
+async def scrape_regional():
+    # Scrapear jugadores de Dak.gg (Corea)
+    korean_players = ["Faker", "ShowMaker", "Chovy"]
+    dak_profiles = await scrape_dak_gg_players(korean_players, game="lol")
+    
+    # Scrapear jugadores de ScoreGG (China) con proxy rotativo
+    chinese_players = ["player123", "player456"]
+    scoregg_profiles = await scrape_scoregg_players(
+        chinese_players, 
+        game="lol",
+        use_proxy=True  # Activa proxy rotativo para China
+    )
+    
+    print(f"✅ Scraped {len(dak_profiles)} jugadores de Corea")
+    print(f"✅ Scraped {len(scoregg_profiles)} jugadores de China")
+
+asyncio.run(scrape_regional())
+```
+
+**Características:**
+- ✅ Extracción de **WinRate** y **Most Played Hero**
+- ✅ Sistema de **proxy rotativo** para China (Great Firewall bypass)
+- ✅ Reintentos automáticos con backoff exponencial
+- ✅ Respeto a **robots.txt**
+- ✅ Soporte Unicode completo (Hangul, 中文)
+- ✅ Inserción automática en Bronze Layer
+
+Ver documentación completa: [REGIONAL_CONNECTORS.md](REGIONAL_CONNECTORS.md)
+
+### Ejemplo 4: Consultar datos de Supabase
 
 ```python
 from supabase_client import SupabaseClient
@@ -296,7 +332,7 @@ results = db.search_players_by_nickname_fuzzy("फेकर")  # Faker en Hindi
 stats = db.get_stats_by_region()
 ```
 
-### Ejemplo 4: Enviar a Airtable
+### Ejemplo 5: Enviar a Airtable
 
 ```python
 from airtable_client import AirtableClient
