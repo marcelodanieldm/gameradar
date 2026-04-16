@@ -181,33 +181,88 @@ class OPGGScraper(BaseScraper):
         page = await self.create_page()
         
         try:
-            # Construir URL
-            url = f"https://{region}.op.gg/summoners/{region}/{summoner_name}"
-            await page.goto(url, wait_until="domcontentloaded")
+            # Construir URL (formato actualizado 2026)
+            url = f"https://www.op.gg/summoners/{region}/{summoner_name}"
+            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
             
-            # Esperar a que cargue el contenido principal
-            await page.wait_for_selector(".summoner-name", timeout=10000)
+            # Esperar a que cargue el contenido principal (selectores actualizados)
+            # Intentar múltiples selectores para mayor robustez
+            selectors_to_try = [
+                "h1.summoner-name",
+                ".profile-icon",
+                "[class*='summoner']",
+                "h1",
+                ".css-"
+            ]
             
-            # Extraer nickname
-            nickname_element = await page.query_selector(".summoner-name")
-            nickname = await nickname_element.inner_text() if nickname_element else summoner_name
+            loaded = False
+            for selector in selectors_to_try:
+                try:
+                    await page.wait_for_selector(selector, timeout=5000)
+                    loaded = True
+                    break
+                except:
+                    continue
             
-            # Extraer rango
-            rank_element = await page.query_selector(".tier")
-            rank = await rank_element.inner_text() if rank_element else "Unranked"
+            if not loaded:
+                logger.warning(f"No se pudo cargar la página de {summoner_name}")
+                return None
             
-            # Extraer win rate y KDA
-            winrate_element = await page.query_selector(".win-rate")
-            winrate_text = await winrate_element.inner_text() if winrate_element else "50%"
-            win_rate = float(winrate_text.replace("%", "").strip())
+            # Extraer nickname - intentar varios selectores
+            nickname = summoner_name
+            for selector in ["h1", ".name", "[class*='name']", "[class*='summoner']"]:
+                try:
+                    elem = await page.query_selector(selector)
+                    if elem:
+                        text = await elem.inner_text()
+                        if text and text.strip():
+                            nickname = text.strip()
+                            break
+                except:
+                    continue
             
-            kda_element = await page.query_selector(".kda")
-            kda_text = await kda_element.inner_text() if kda_element else "2.0:1"
-            # Parse KDA (formato: "3.5:1")
-            try:
-                kda = float(kda_text.split(":")[0])
-            except:
-                kda = 2.0
+            # Extraer rango - intentar varios selectores
+            rank = "Unranked"
+            for selector in [".tier", "[class*='tier']", "[class*='rank']", ".rank"]:
+                try:
+                    elem = await page.query_selector(selector)
+                    if elem:
+                        text = await elem.inner_text()
+                        if text and any(r in text for r in ["Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Challenger"]):
+                            rank = text.strip()
+                            break
+                except:
+                    continue
+            
+            # Extraer win rate
+            win_rate = 50.0
+            for selector in [".win-rate", "[class*='winrate']", "[class*='win']"]:
+                try:
+                    elem = await page.query_selector(selector)
+                    if elem:
+                        text = await elem.inner_text()
+                        import re
+                        match = re.search(r'(\d+)%', text)
+                        if match:
+                            win_rate = float(match.group(1))
+                            break
+                except:
+                    continue
+            
+            # Extraer KDA
+            kda = 2.0
+            for selector in [".kda", "[class*='kda']"]:
+                try:
+                    elem = await page.query_selector(selector)
+                    if elem:
+                        text = await elem.inner_text()
+                        import re
+                        match = re.search(r'(\d+\.?\d*)', text)
+                        if match:
+                            kda = float(match.group(1))
+                            break
+                except:
+                    continue
             
             # Detectar país
             country = detect_country(
