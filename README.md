@@ -315,7 +315,69 @@ asyncio.run(scrape_regional())
 
 Ver documentación completa: [REGIONAL_CONNECTORS.md](REGIONAL_CONNECTORS.md)
 
-### Ejemplo 4: Consultar datos de Supabase
+### Ejemplo 4: Universal Aggregator (Sistema Enterprise)
+
+```python
+import asyncio
+from UniversalAggregator import UniversalAggregator, fetch_player_with_fallback
+
+async def fetch_with_fallback():
+    async with UniversalAggregator() as aggregator:
+        # Intentará: Riot API → OP.GG → Dak.gg → TEC India → Wanplus
+        data = await aggregator.fetch_player(
+            "Faker",
+            preferred_sources=["riot_api", "opgg", "dakgg", "tec_india", "wanplus"],
+            region="kr",
+            use_fallback=True  # Activar fallback automático
+        )
+        
+        if data:
+            print(f"✅ Datos obtenidos de: {data['source']}")
+            print(f"   Nickname: {data['nickname']}")
+            print(f"   WinRate: {data['win_rate']}%")
+            print(f"   Rank: {data['rank']}")
+        
+        # Fetch en batch (concurrente)
+        korean_players = ["Faker", "ShowMaker", "Chovy", "Canyon", "Keria"]
+        results = await aggregator.fetch_multiple_players(
+            korean_players,
+            preferred_sources=["dakgg", "opgg"],
+            max_concurrent=3,
+            region="kr"
+        )
+        
+        print(f"✅ Obtenidos {len(results)}/{len(korean_players)} jugadores")
+        
+        # Métricas globales
+        metrics = aggregator.get_global_metrics()
+        print(f"📊 Success Rate: {metrics['success_rate']}%")
+        print(f"📊 Total Fallbacks: {metrics['total_fallbacks']}")
+
+# Función de alto nivel (simplificada)
+data = await fetch_player_with_fallback(
+    identifier="Faker",
+    region="kr",
+    game="lol"
+)
+
+asyncio.run(fetch_with_fallback())
+```
+
+**Características:**
+- ✅ **Patrón Adapter**: Escala a 100+ fuentes sin modificar código
+- ✅ **Fallback automático**: Si una fuente falla, pasa a la siguiente
+- ✅ **httpx async + HTTP/2**: Máxima velocidad y eficiencia
+- ✅ **HeaderRotator**: User-Agents específicos por región (Korea/China/India/Global)
+- ✅ **SimpleCache con TTL**: Reduce requests duplicados (300s default)
+- ✅ **CircuitBreaker**: Evita bombardear fuentes caídas (threshold: 5 fallos)
+- ✅ **Anti-detection**: Random delays (1-6s), header rotation
+- ✅ **Métricas detalladas**: Success rate por adapter y global
+- ✅ **5 adapters iniciales**: Riot API, OP.GG, Dak.gg, TEC India, Wanplus
+- ✅ **AdapterFactory**: Registro dinámico de nuevos adapters
+
+Ver documentación completa: [UNIVERSAL_AGGREGATOR.md](UNIVERSAL_AGGREGATOR.md)
+
+### Ejemplo 5: Consultar datos de Supabase
 
 ```python
 from supabase_client import SupabaseClient
@@ -332,7 +394,7 @@ results = db.search_players_by_nickname_fuzzy("फेकर")  # Faker en Hindi
 stats = db.get_stats_by_region()
 ```
 
-### Ejemplo 5: Enviar a Airtable
+### Ejemplo 6: Enviar a Airtable
 
 ```python
 from airtable_client import AirtableClient
