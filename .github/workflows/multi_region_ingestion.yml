@@ -1,0 +1,245 @@
+name: Multi-Region Strategic Ingestion
+
+# Execution Schedule: Every 6 hours (cost-efficient)
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      regions:
+        description: 'Regions to ingest (comma-separated: china,korea,india,vietnam,japan,sea)'
+        required: false
+        default: 'china,korea,india,vietnam'
+      players_per_region:
+        description: 'Number of players per region'
+        required: false
+        default: '50'
+      enable_fallback:
+        description: 'Enable fallback strategy'
+        required: false
+        default: 'true'
+
+jobs:
+  multi-region-ingestion:
+    name: Ingest from Strategic Sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Max 30 minutos (avoid runaway costs)
+    
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+      
+      - name: 🔑 Configure API Keys
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+        run: |
+          echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "SUPABASE_KEY=$SUPABASE_KEY" >> $GITHUB_ENV
+          echo "RIOT_API_KEY=$RIOT_API_KEY" >> $GITHUB_ENV
+          echo "STEAM_API_KEY=$STEAM_API_KEY" >> $GITHUB_ENV
+      
+      - name: 📋 Prepare Ingestion Config
+        run: |
+          cat > ingestion_config.json << 'EOF'
+          {
+            "max_concurrent_requests": 10,
+            "max_concurrent_per_source": 3,
+            "max_retries_per_source": 3,
+            "request_timeout": 30,
+            "total_timeout": 300,
+            "enable_fallback": ${{ github.event.inputs.enable_fallback || 'true' }},
+            "fallback_strategy": "cascade",
+            "cache_ttl": 300,
+            "enable_cache": true,
+            "circuit_breaker_threshold": 5,
+            "circuit_breaker_timeout": 60,
+            "log_to_supabase": true,
+            "log_to_file": true,
+            "log_level": "INFO"
+          }
+          EOF
+          
+          cat ingestion_config.json
+      
+      - name: 📝 Generate Players List
+        run: |
+          python << 'PYTHON_SCRIPT'
+          import json
+          import os
+          
+          # Players por región (puedes personalizarlo)
+          players_by_region = {
+              "china": [
+                  "JackeyLove", "TheShy", "Ming", "Rookie", "Meiko",
+                  "369", "Bin", "Knight", "Hope", "Jiejie"
+              ],
+              "korea": [
+                  "Faker", "ShowMaker", "Chovy", "Canyon", "Keria",
+                  "Doran", "Gumayusi", "Zeus", "Oner", "Delight"
+              ],
+              "india": [
+                  "IndianPlayer1", "IndianPlayer2", "IndianPlayer3",
+                  "IndianPlayer4", "IndianPlayer5"
+              ],
+              "vietnam": [
+                  "VietnamPlayer1", "VietnamPlayer2", "VietnamPlayer3"
+              ],
+              "japan": [
+                  "JapanPlayer1", "JapanPlayer2", "JapanPlayer3"
+              ],
+              "sea": [
+                  "SEAPlayer1", "SEAPlayer2", "SEAPlayer3"
+              ]
+          }
+          
+          # Filtrar regiones según input
+          regions_input = os.getenv("REGIONS_INPUT", "china,korea,india,vietnam")
+          active_regions = [r.strip() for r in regions_input.split(",")]
+          
+          filtered_players = {
+              region: players 
+              for region, players in players_by_region.items() 
+              if region in active_regions
+          }
+          
+          # Guardar
+          with open("players_to_ingest.json", "w", encoding="utf-8") as f:
+              json.dump(filtered_players, f, indent=2, ensure_ascii=False)
+          
+          print("✅ Players list generated:")
+          print(json.dumps(filtered_players, indent=2, ensure_ascii=False))
+          PYTHON_SCRIPT
+        env:
+          REGIONS_INPUT: ${{ github.event.inputs.regions || 'china,korea,india,vietnam' }}
+      
+      - name: 🚀 Run Multi-Region Ingestion
+        id: ingestion
+        run: |
+          python << 'PYTHON_SCRIPT'
+          import asyncio
+          import sys
+          import os
+          
+          # Agregar directorio actual al path
+          sys.path.insert(0, os.getcwd())
+          
+          from MultiRegionIngestor import run_scheduled_ingestion
+          
+          async def main():
+              try:
+                  await run_scheduled_ingestion(
+                      config_file="ingestion_config.json",
+                      players_file="players_to_ingest.json"
+                  )
+                  print("✅ Ingestion completed successfully")
+                  return 0
+              except Exception as e:
+                  print(f"❌ Ingestion failed: {e}")
+                  import traceback
+                  traceback.print_exc()
+                  return 1
+          
+          exit_code = asyncio.run(main())
+          sys.exit(exit_code)
+          PYTHON_SCRIPT
+        continue-on-error: true
+      
+      - name: 📊 Parse Ingestion Reports
+        if: always()
+        run: |
+          echo "## 📊 Ingestion Reports" >> $GITHUB_STEP_SUMMARY
+          
+          # Buscar todos los reportes generados
+          for report in ingestion_report_*.json; do
+            if [ -f "$report" ]; then
+              echo "### 📄 $report" >> $GITHUB_STEP_SUMMARY
+              
+              # Extraer métricas clave con jq
+              SUCCESS_RATE=$(jq -r '.success_rate' "$report" 2>/dev/null || echo "N/A")
+              TOTAL=$(jq -r '.total_players' "$report" 2>/dev/null || echo "N/A")
+              SUCCESSFUL=$(jq -r '.successful' "$report" 2>/dev/null || echo "N/A")
+              FAILED=$(jq -r '.failed' "$report" 2>/dev/null || echo "N/A")
+              DURATION=$(jq -r '.duration_seconds' "$report" 2>/dev/null || echo "N/A")
+              
+              echo "- **Total Players:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+              echo "- **Successful:** $SUCCESSFUL" >> $GITHUB_STEP_SUMMARY
+              echo "- **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+              echo "- **Success Rate:** $SUCCESS_RATE%" >> $GITHUB_STEP_SUMMARY
+              echo "- **Duration:** ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+      
+      - name: 📤 Upload Ingestion Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-reports-${{ github.run_number }}
+          path: |
+            ingestion_report_*.json
+            multi_region_ingestor_*.log
+          retention-days: 30
+      
+      - name: 🔔 Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Multi-region ingestion failed!"
+          echo "Check logs and reports for details."
+          # Aquí podrías agregar notificación a Slack/Discord
+      
+      - name: ✅ Summary
+        if: success()
+        run: |
+          echo "✅ Multi-region ingestion completed successfully!"
+          echo "Reports uploaded as artifacts."
+
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    if: always()
+    needs: multi-region-ingestion
+    
+    steps:
+      - name: 🧹 Delete Old Artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            // Mantener solo los últimos 10 reportes
+            const sortedArtifacts = artifacts.data.artifacts
+              .filter(a => a.name.startsWith('ingestion-reports-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            const toDelete = sortedArtifacts.slice(10);
+            
+            for (const artifact of toDelete) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+              console.log(`Deleted artifact: ${artifact.name}`);
+            }
