@@ -1,0 +1,124 @@
+{
+  "_meta": {
+    "run_ts": "2026-04-17T23:26:40Z",
+    "total_players": 6,
+    "filter": "activity_level > 70",
+    "activity_formula": "60%×(games_analyzed/100) + 25%×(win_rate/100) + 15%×(kda/10)  [+20%×(consistency_score/100) when available]"
+  },
+  "players": [
+    {
+      "nickname": "Faker",
+      "real_name": "이상혁",
+      "team": "T1",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "raw_url": "https://dak.gg/lol/players/Faker",
+      "stats": {
+        "win_rate": 71.0,
+        "kda": 6.1,
+        "games_analyzed": 100
+      },
+      "_source": "dakgg",
+      "activity_level": 86.9
+    },
+    {
+      "nickname": "Chovy",
+      "real_name": "정지훈",
+      "team": "Gen.G",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "raw_url": "https://dak.gg/lol/players/Chovy",
+      "stats": {
+        "win_rate": 68.5,
+        "kda": 7.3,
+        "games_analyzed": 95
+      },
+      "_source": "dakgg",
+      "activity_level": 85.08
+    },
+    {
+      "nickname": "Knight",
+      "real_name": "朱晓龙",
+      "team": "TES",
+      "role": "中单",
+      "rank": "Challenger",
+      "country": "CN",
+      "server": "Ionia",
+      "game": "LOL",
+      "raw_url": "https://www.wanplus.com/lol/player/Knight",
+      "stats": {
+        "win_rate": 58.0,
+        "kda": 5.2,
+        "games_analyzed": 90,
+        "apm": 310,
+        "gold_per_minutes": 440.0
+      },
+      "_source": "wanplus",
+      "activity_level": 76.3
+    },
+    {
+      "nickname": "ShowMaker",
+      "real_name": "허수",
+      "team": "DK",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "raw_url": "https://op.gg/summoners/kr/ShowMaker",
+      "stats": {
+        "win_rate": 65.2,
+        "kda": 5.8,
+        "games_analyzed": 85,
+        "lp": 1450
+      },
+      "_source": "opgg_kr",
+      "activity_level": 76.0
+    },
+    {
+      "nickname": "Keria",
+      "real_name": "류민석",
+      "team": "T1",
+      "role": "Support",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "raw_url": "https://op.gg/summoners/kr/Keria",
+      "stats": {
+        "win_rate": 70.1,
+        "kda": 4.9,
+        "games_analyzed": 78,
+        "lp": 1380
+      },
+      "_source": "opgg_kr",
+      "activity_level": 71.67
+    },
+    {
+      "nickname": "JackeyLove",
+      "real_name": "于佳伟",
+      "team": "iG战队",
+      "role": "射手",
+      "rank": "Challenger",
+      "country": "CN",
+      "server": "Ionia",
+      "game": "LOL",
+      "raw_url": "https://www.wanplus.com/lol/player/JackeyLove",
+      "stats": {
+        "win_rate": 62.5,
+        "kda": 4.8,
+        "games_analyzed": 80,
+        "apm": 320,
+        "gold_per_minutes": 450.0
+      },
+      "_source": "wanplus",
+      "activity_level": 70.82
+    }
+  ]
+}
