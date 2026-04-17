@@ -1,96 +1,205 @@
 name: Bronze Ingestion — Asia Full Pipeline (11 fuentes)
 
-# ──────────────────────────────────────────────────────────────
-# Ejecuta cada 12 horas y en cada push a main (ramas protegidas).
-# También admite disparo manual con parámetros opcionales.
-# ──────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# Ejecuta cada ~23 horas (00:00 y 23:00 UTC) para evitar colisiones con
+# ventanas de mantenimiento de los sitios fuente.
+# Admite disparo manual con selección de fuentes y modo dry-run.
+#
+# Fuentes cubiertas:
+#   Korea/Japan : Dak.gg (Playwright), OP.GG KR, OP.GG JP,
+#                 ZETA Division, DetonatioN, Game-i Japan
+#   China       : Wanplus, PentaQ
+#   India/SEA   : The Esports Club India, VRL Vyper, GosuGamers SEA
+#   Global      : Liquipedia (MediaWiki API)
+#
+# Técnicas anti-bloqueo implementadas en Python:
+#   - AdvancedHeaderRotator: User-Agent + Accept-Language por región
+#   - ExponentialBackoffHandler: jitter async delay entre requests
+#   - Playwright headless con --disable-blink-features=AutomationControlled
+#   - tenacity @retry con stop_after_attempt(3) + wait_exponential
+# ──────────────────────────────────────────────────────────────────────────────
 on:
   schedule:
-    - cron: '0 */12 * * *'   # 00:00 y 12:00 UTC diariamente
+    # Corre a 00:00 UTC y 23:00 UTC → ~23 h entre ciclos
+    - cron: '0 0 * * *'    # medianoche UTC
+    - cron: '0 23 * * *'   # 23:00 UTC (~23 h después)
 
   workflow_dispatch:
     inputs:
       sources:
-        description: 'Fuentes a scrapear (separadas por espacio)'
+        description: >
+          Fuentes a scrapear (separadas por espacio).
+          Opciones: wanplus dakgg tec_india opgg_kr opgg_jp
+                    zeta_division detonation gamei_japan
+                    pentaq vrl_vyper gosugamers_sea liquipedia
         required: false
-        default: 'wanplus dakgg tec_india opgg_kr opgg_jp zeta_division detonation gamei_japan pentaq vrl_vyper gosugamers_sea liquipedia'
+        default: >-
+          wanplus dakgg tec_india opgg_kr opgg_jp
+          zeta_division detonation gamei_japan
+          pentaq vrl_vyper gosugamers_sea liquipedia
       dry_run:
-        description: 'Dry-run — ejecutar sin escribir archivos'
+        description: 'Dry-run — ejecutar sin escribir archivos ni hacer commit'
         required: false
         default: 'false'
         type: choice
         options: ['false', 'true']
 
+# Permisos: escritura de contenido para commitear /bronze
 permissions:
-  contents: write   # necesario para hacer commit de /bronze
+  contents: write
 
 jobs:
   ingest:
-    name: Ingest Bronze — ${{ github.event.inputs.sources || 'all sources' }}
+    name: >-
+      Ingest Bronze [${{ github.event.inputs.sources && 'custom' || 'all 11' }}]
+      #${{ github.run_number }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-    # Evita ejecuciones concurrentes para el mismo grupo
+    timeout-minutes: 55
+
+    # Impide ejecuciones paralelas que escribirían los mismos archivos JSON
     concurrency:
       group: bronze-ingest
       cancel-in-progress: false
 
+    env:
+      PYTHONUNBUFFERED: "1"
+      PYTHONWARNINGS: "ignore:Unverified HTTPS request"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
     steps:
-      # ── 1. Checkout con token para poder hacer push ──────────
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
-      # ── 2. Python 3.11 ────────────────────────────────────────
+      # ── 2. Python 3.11 con caché de pip ─────────────────────────────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # ── 3. Dependencias Python ────────────────────────────────
+      # ── 3. Instalar dependencias Python ─────────────────────────────────────
+      #    httpx[http2]  — cliente async con HTTP/2 para todas las fuentes REST
+      #    playwright    — headless Chromium para Dak.gg (React/Next.js)
+      #    beautifulsoup4— parsing HTML ligero (fallback en varios adapters)
+      #    tenacity      — retry con backoff exponencial
+      #    loguru        — logging estructurado
+      #    pydantic       — validación de modelos
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          echo "── Versiones instaladas ──────────────────────────────────────────"
+          pip show httpx playwright beautifulsoup4 tenacity loguru pydantic \
+            | grep -E '^(Name|Version)'
 
-      # ── 4. Playwright + Chromium ──────────────────────────────
+      # ── 4. Playwright → solo Chromium con system-libs ───────────────────────
       - name: Install Playwright browsers
         run: |
           playwright install chromium --with-deps
+          echo "✅  Chromium headless listo para Dak.gg"
 
-      # ── 5. Crear estructura de directorios ───────────────────
-      - name: Prepare bronze directories
+      # ── 5. Crear árbol /bronze (idempotente) ────────────────────────────────
+      - name: Prepare bronze directory tree
         run: |
-          mkdir -p bronze/wanplus bronze/dakgg bronze/tec_india \
-                   bronze/opgg_kr bronze/opgg_jp \
-                   bronze/zeta_division bronze/detonation bronze/gamei_japan \
-                   bronze/pentaq bronze/vrl_vyper bronze/gosugamers_sea \
-                   bronze/liquipedia bronze/logs
+          mkdir -p \
+            bronze/wanplus        \
+            bronze/dakgg          \
+            bronze/tec_india      \
+            bronze/opgg_kr        \
+            bronze/opgg_jp        \
+            bronze/zeta_division  \
+            bronze/detonation     \
+            bronze/gamei_japan    \
+            bronze/pentaq         \
+            bronze/vrl_vyper      \
+            bronze/gosugamers_sea \
+            bronze/liquipedia     \
+            bronze/logs
+          echo "✅  Árbol /bronze preparado."
 
-      # ── 6. Ejecutar ingesta ───────────────────────────────────
+      # ── 6. Smoke-test de imports (falla rápido ante errores de sintaxis) ─────
+      - name: Smoke-test Python modules
+        run: |
+          python - <<'PYEOF'
+          import sys
+          failed = []
+          for mod in ["StrategicAdapters", "AsiaAdapters", "ingest_bronze_targets"]:
+              try:
+                  __import__(mod)
+                  print(f"  ✅  {mod}")
+              except Exception as exc:
+                  failed.append(f"  ❌  {mod}: {exc}")
+                  print(f"  ❌  {mod}: {exc}", file=sys.stderr)
+          if failed:
+              sys.exit(1)
+          print("\n✅  Todos los módulos importan correctamente.")
+          PYEOF
+
+      # ── 7. Ejecutar ingesta principal ────────────────────────────────────────
+      #    - Rotación de headers por región (AdvancedHeaderRotator)
+      #    - httpx AsyncClient con http2=True para fuentes REST/HTML
+      #    - Playwright headless para Dak.gg (JS-heavy, anti-bot)
+      #    - Sanitización completa (tipos, rangos, null-coalescing)
+      #    - Salida: bronze/<source>/YYYY-MM-DD.json (merge by nickname)
+      #    - Fallback a skeleton si la fuente falla (sin abortar el pipeline)
       - name: Run bronze ingestion
-        env:
-          SUPABASE_URL:  ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY:  ${{ secrets.SUPABASE_KEY }}
-          PYTHONUNBUFFERED: "1"
+        id: ingestion
         run: |
           SOURCES="${{ github.event.inputs.sources || 'wanplus dakgg tec_india opgg_kr opgg_jp zeta_division detonation gamei_japan pentaq vrl_vyper gosugamers_sea liquipedia' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
 
           ARGS="--sources ${SOURCES}"
-          if [ "${DRY_RUN}" = "true" ]; then
-            ARGS="${ARGS} --dry-run"
-          fi
+          [ "${DRY_RUN}" = "true" ] && ARGS="${ARGS} --dry-run"
 
-          echo "▶  Ejecutando: python ingest_bronze_targets.py ${ARGS}"
+          echo "▶  Fuentes  : ${SOURCES}"
+          echo "▶  Dry-run  : ${DRY_RUN}"
+          echo "▶  Comando  : python ingest_bronze_targets.py ${ARGS}"
+          echo "sources=${SOURCES}" >> "$GITHUB_OUTPUT"
+
           python ingest_bronze_targets.py ${ARGS}
-        # El paso NO falla el workflow si el scraper devuelve exit 1 parcial;
-        # los errores individuales se logean y el resto continúa.
-        continue-on-error: false
 
-      # ── 7. Commit y push de los JSONs generados ──────────────
+      # ── 8. Validar JSONs generados ──────────────────────────────────────────
+      - name: Validate bronze JSON files
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          python - <<'PYEOF'
+          import json, pathlib, sys, datetime
+
+          today  = datetime.date.today().isoformat()
+          bronze = pathlib.Path("bronze")
+          total  = 0
+          errors = []
+
+          for src_dir in sorted(bronze.iterdir()):
+              if not src_dir.is_dir() or src_dir.name == "logs":
+                  continue
+              f = src_dir / f"{today}.json"
+              if not f.exists():
+                  print(f"  ⚠️  {src_dir.name}: sin archivo para {today}")
+                  continue
+              try:
+                  data = json.loads(f.read_text(encoding="utf-8"))
+                  if not isinstance(data, list):
+                      errors.append(f"❌  {f}: esperaba lista JSON")
+                  else:
+                      total += len(data)
+                      full  = sum(1 for r in data if not r.get("_partial"))
+                      print(f"  ✅  {src_dir.name:<20}: {len(data):>3} registros ({full} con datos)")
+              except json.JSONDecodeError as exc:
+                  errors.append(f"❌  {f}: JSON inválido — {exc}")
+
+          if errors:
+              print("\n".join(errors), file=sys.stderr)
+              sys.exit(1)
+          print(f"\n✅  Total registros validados: {total}")
+          PYEOF
+
+      # ── 9. Commit y push ────────────────────────────────────────────────────
       - name: Commit bronze data to repository
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
@@ -99,28 +208,26 @@ jobs:
 
           git add bronze/
 
-          # Solo hace commit si hay cambios reales
           if git diff --cached --quiet; then
-            echo "ℹ️  Sin cambios nuevos en /bronze — nada que commitear."
+            echo "ℹ️  Sin cambios en /bronze — nada que commitear."
           else
             DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
             git commit -m "data(bronze): ingesta automática ${DATE}
 
-            Fuentes: ${{ github.event.inputs.sources || 'all (11 fuentes Asia)' }}
-            Trigger: ${{ github.event_name }}
-            Run: ${{ github.run_number }}"
+          Fuentes: ${{ steps.ingestion.outputs.sources }}
+          Trigger: ${{ github.event_name }}
+          Run: #${{ github.run_number }}"
 
             git push
-            echo "✅  Bronze data commitada correctamente."
+            echo "✅  Bronze data commitada y pusheada."
           fi
 
-      # ── 8. Subir artefactos en caso de error ─────────────────
-      - name: Upload logs artifact
+      # ── 10. Subir logs como artefacto (siempre) ─────────────────────────────
+      - name: Upload summary logs artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bronze-logs-${{ github.run_number }}
-          path: |
-            bronze/logs/
-          retention-days: 7
-          if-no-files-found: ignore
+          name: bronze-logs-run-${{ github.run_number }}
+          path: bronze/logs/
+          retention-days: 30
+          if-no-files-found: warn
