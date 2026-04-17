@@ -248,7 +248,7 @@ class MultiRegionIngestor:
         )
         
         # Cache compartido
-        self.cache = SimpleCache(ttl=self.config.cache_ttl) if self.config.enable_cache else None
+        self.cache = SimpleCache(ttl_seconds=self.config.cache_ttl) if self.config.enable_cache else None
         
         # Supabase client para logging
         self.supabase_client = None
