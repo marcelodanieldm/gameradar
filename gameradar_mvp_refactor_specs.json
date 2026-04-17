@@ -1,0 +1,793 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-04-16",
+    "description": "GameRadar AI - MVP Refactor Specifications for Power BI Dashboard",
+    "purpose": "Data model for comparing amateur prospects vs established professionals with regional difficulty adjustments"
+  },
+  "mechanical_skill_vectors": {
+    "description": "Multi-dimensional skill assessment framework for radar charts (Spider Charts)",
+    "dimensions": [
+      {
+        "id": "micro_mechanics",
+        "name": "Micro Mechanics",
+        "scale": "0-100",
+        "weight": 0.20,
+        "components": ["APM", "CS/min", "Reaction Time", "Combo Execution"],
+        "sources": ["wanplus", "opgg", "riot_api_kr"]
+      },
+      {
+        "id": "macro_awareness",
+        "name": "Macro Awareness",
+        "scale": "0-100",
+        "weight": 0.18,
+        "components": ["Map Awareness", "Objective Control", "Rotation Timing"],
+        "sources": ["opgg", "riot_api_kr", "dakgg"]
+      },
+      {
+        "id": "consistency",
+        "name": "Consistency Score",
+        "scale": "0-100",
+        "weight": 0.15,
+        "components": ["Performance Variance", "Tilt Resistance", "Clutch Factor"],
+        "sources": ["tec_india", "riot_api_kr", "opgg"]
+      },
+      {
+        "id": "adaptability",
+        "name": "Adaptability",
+        "scale": "0-100",
+        "weight": 0.12,
+        "components": ["Champion Pool Depth", "Meta Adaptation", "Role Flexibility"],
+        "sources": ["opgg", "dakgg", "riot_api_kr"]
+      },
+      {
+        "id": "team_synergy",
+        "name": "Team Synergy",
+        "scale": "0-100",
+        "weight": 0.15,
+        "components": ["Assist Rate", "Vision Score", "Communication Rating"],
+        "sources": ["opgg", "soha_game", "tec_india"]
+      },
+      {
+        "id": "mechanical_ceiling",
+        "name": "Mechanical Ceiling",
+        "scale": "0-100",
+        "weight": 0.20,
+        "components": ["Peak Performance", "Outplay Potential", "Skill Expression"],
+        "sources": ["wanplus", "riot_api_kr", "loot_bet"]
+      }
+    ],
+    "aggregation_method": "weighted_average",
+    "visualization_type": "spider_chart"
+  },
+  "regional_difficulty_multipliers": {
+    "description": "Regional difficulty adjustments for global ranking normalization",
+    "formula": "adjusted_score = base_score × regional_multiplier × server_competitiveness",
+    "regions": [
+      {
+        "region": "KR",
+        "country": "Korea",
+        "multiplier": 1.20,
+        "server_competitiveness": 1.00,
+        "justification": "Highest global skill density, most competitive ladder",
+        "primary_sources": ["riot_api_kr", "dakgg", "opgg"],
+        "rank_equivalency": {
+          "challenger": 100,
+          "grandmaster": 95,
+          "master": 85,
+          "diamond": 70
+        }
+      },
+      {
+        "region": "CN",
+        "country": "China",
+        "multiplier": 1.15,
+        "server_competitiveness": 0.98,
+        "justification": "Second-highest skill density, LPL dominance",
+        "primary_sources": ["wanplus", "riot_api_kr"],
+        "rank_equivalency": {
+          "challenger": 98,
+          "grandmaster": 92,
+          "master": 82,
+          "diamond": 68
+        }
+      },
+      {
+        "region": "JP",
+        "country": "Japan",
+        "multiplier": 1.10,
+        "server_competitiveness": 0.85,
+        "justification": "Growing competitive scene, moderate skill density",
+        "primary_sources": ["riot_api_jp", "opgg"],
+        "rank_equivalency": {
+          "challenger": 90,
+          "grandmaster": 85,
+          "master": 75,
+          "diamond": 62
+        }
+      },
+      {
+        "region": "VN",
+        "country": "Vietnam",
+        "multiplier": 1.05,
+        "server_competitiveness": 0.80,
+        "justification": "Emerging region with high mobile esports engagement",
+        "primary_sources": ["soha_game", "opgg", "riot_api_kr"],
+        "rank_equivalency": {
+          "challenger": 85,
+          "grandmaster": 80,
+          "master": 70,
+          "diamond": 58
+        }
+      },
+      {
+        "region": "IN",
+        "country": "India",
+        "multiplier": 1.00,
+        "server_competitiveness": 0.75,
+        "justification": "Developing scene, high potential for growth",
+        "primary_sources": ["tec_india", "riot_api_kr"],
+        "rank_equivalency": {
+          "challenger": 80,
+          "grandmaster": 75,
+          "master": 65,
+          "diamond": 55
+        }
+      },
+      {
+        "region": "SEA",
+        "country": "Southeast Asia",
+        "multiplier": 1.02,
+        "server_competitiveness": 0.78,
+        "justification": "Diverse region with varying skill levels",
+        "primary_sources": ["steam_api", "riot_api_sea"],
+        "rank_equivalency": {
+          "challenger": 82,
+          "grandmaster": 77,
+          "master": 68,
+          "diamond": 56
+        }
+      }
+    ],
+    "global_normalization_formula": "global_score = (regional_score × multiplier) / max_multiplier × 100"
+  },
+  "player_archetypes": {
+    "description": "Classification system for prospect categorization in Power BI dashboards",
+    "archetypes": [
+      {
+        "id": "mechanical_prodigy",
+        "name": "Mechanical Prodigy",
+        "profile": {
+          "micro_mechanics": ">85",
+          "mechanical_ceiling": ">90",
+          "consistency": "<70",
+          "team_synergy": "<65"
+        },
+        "typical_regions": ["KR", "CN"],
+        "scouting_priority": "High",
+        "color_hex": "#FF6B6B"
+      },
+      {
+        "id": "consistent_grinder",
+        "name": "Consistent Grinder",
+        "profile": {
+          "consistency": ">85",
+          "macro_awareness": ">75",
+          "mechanical_ceiling": "<75",
+          "adaptability": ">70"
+        },
+        "typical_regions": ["IN", "VN", "SEA"],
+        "scouting_priority": "Medium",
+        "color_hex": "#4ECDC4"
+      },
+      {
+        "id": "tactical_mastermind",
+        "name": "Tactical Mastermind",
+        "profile": {
+          "macro_awareness": ">90",
+          "team_synergy": ">80",
+          "micro_mechanics": "<80",
+          "adaptability": ">75"
+        },
+        "typical_regions": ["JP", "CN"],
+        "scouting_priority": "High",
+        "color_hex": "#FFE66D"
+      },
+      {
+        "id": "versatile_all_rounder",
+        "name": "Versatile All-Rounder",
+        "profile": {
+          "all_dimensions": "70-85",
+          "no_weak_points": true
+        },
+        "typical_regions": ["All"],
+        "scouting_priority": "Very High",
+        "color_hex": "#1DD1A1"
+      },
+      {
+        "id": "high_ceiling_prospect",
+        "name": "High Ceiling Prospect",
+        "profile": {
+          "mechanical_ceiling": ">88",
+          "adaptability": ">75",
+          "age": "<21",
+          "professional_experience": false
+        },
+        "typical_regions": ["KR", "CN", "VN"],
+        "scouting_priority": "Very High",
+        "color_hex": "#FF9F43"
+      }
+    ]
+  },
+  "power_bi_data_model": {
+    "description": "Recommended data model structure for Power BI import",
+    "tables": [
+      {
+        "name": "Players",
+        "source": "bronze_raw_data / silver_players",
+        "primary_key": "player_id",
+        "columns": [
+          {"name": "player_id", "type": "Text", "description": "Unique player identifier"},
+          {"name": "nickname", "type": "Text", "description": "Player nickname"},
+          {"name": "country_code", "type": "Text", "description": "ISO 3166-1 Alpha-2"},
+          {"name": "region", "type": "Text", "description": "KR, CN, IN, VN, JP, SEA"},
+          {"name": "rank", "type": "Text", "description": "challenger, grandmaster, master, etc."},
+          {"name": "team", "type": "Text", "description": "Professional team (null for amateurs)"},
+          {"name": "is_professional", "type": "Boolean", "description": "true/false"},
+          {"name": "player_archetype", "type": "Text", "description": "From player_archetypes"}
+        ]
+      },
+      {
+        "name": "MechanicalSkills",
+        "source": "Calculated from stats and advanced_metrics",
+        "primary_key": "player_id",
+        "columns": [
+          {"name": "player_id", "type": "Text"},
+          {"name": "micro_mechanics", "type": "Number", "scale": "0-100"},
+          {"name": "macro_awareness", "type": "Number", "scale": "0-100"},
+          {"name": "consistency", "type": "Number", "scale": "0-100"},
+          {"name": "adaptability", "type": "Number", "scale": "0-100"},
+          {"name": "team_synergy", "type": "Number", "scale": "0-100"},
+          {"name": "mechanical_ceiling", "type": "Number", "scale": "0-100"}
+        ]
+      },
+      {
+        "name": "RegionalDifficulty",
+        "source": "regional_difficulty_multipliers",
+        "primary_key": "region",
+        "columns": [
+          {"name": "region", "type": "Text"},
+          {"name": "country", "type": "Text"},
+          {"name": "multiplier", "type": "Number"},
+          {"name": "server_competitiveness", "type": "Number"}
+        ]
+      },
+      {
+        "name": "CalculatedScores",
+        "source": "DAX Calculated Table",
+        "relationships": [
+          {"from": "Players[region]", "to": "RegionalDifficulty[region]"},
+          {"from": "Players[player_id]", "to": "MechanicalSkills[player_id]"}
+        ],
+        "calculated_columns": [
+          {
+            "name": "adjusted_global_score",
+            "formula": "MechanicalSkills[weighted_average] * RegionalDifficulty[multiplier] / 1.20 * 100"
+          },
+          {
+            "name": "weighted_skill_average",
+            "formula": "SUMX(MechanicalSkills, [dimension_value] * [dimension_weight])"
+          }
+        ]
+      }
+    ]
+  },
+  "power_bi_visualizations": {
+    "description": "Recommended visualizations for GameRadar AI dashboard",
+    "visuals": [
+      {
+        "id": "spider_chart_comparison",
+        "type": "Radar Chart (Spider Chart)",
+        "title": "Mechanical Skill Vector: Amateur vs Pro",
+        "data_source": "MechanicalSkills",
+        "axes": [
+          "micro_mechanics",
+          "macro_awareness",
+          "consistency",
+          "adaptability",
+          "team_synergy",
+          "mechanical_ceiling"
+        ],
+        "legend": {
+          "amateur": "Players[is_professional] = FALSE",
+          "professional": "Players[is_professional] = TRUE"
+        },
+        "filters": [
+          "Players[region]",
+          "Players[rank]",
+          "Players[player_archetype]"
+        ],
+        "color_scheme": "#FF6B6B (Amateur), #1DD1A1 (Pro)"
+      },
+      {
+        "id": "regional_ranking_scatter",
+        "type": "Scatter Chart",
+        "title": "Regional Difficulty-Adjusted Global Ranking",
+        "x_axis": "CalculatedScores[adjusted_global_score]",
+        "y_axis": "RegionalDifficulty[multiplier]",
+        "size": "MechanicalSkills[mechanical_ceiling]",
+        "color": "Players[region]",
+        "filters": [
+          "Players[is_professional]",
+          "Players[rank]"
+        ]
+      },
+      {
+        "id": "archetype_distribution",
+        "type": "Donut Chart",
+        "title": "Player Archetype Distribution by Region",
+        "values": "COUNT(Players[player_id])",
+        "legend": "Players[player_archetype]",
+        "filters": ["Players[region]"]
+      },
+      {
+        "id": "top_prospects_table",
+        "type": "Table with Conditional Formatting",
+        "title": "Top 50 Amateur Prospects (Difficulty-Adjusted)",
+        "columns": [
+          "Players[nickname]",
+          "Players[region]",
+          "Players[rank]",
+          "CalculatedScores[adjusted_global_score]",
+          "Players[player_archetype]",
+          "MechanicalSkills[mechanical_ceiling]"
+        ],
+        "sort_by": "CalculatedScores[adjusted_global_score] DESC",
+        "filters": ["Players[is_professional] = FALSE"],
+        "conditional_formatting": {
+          "adjusted_global_score": {
+            ">90": "#1DD1A1",
+            "80-90": "#4ECDC4",
+            "70-80": "#FFE66D",
+            "<70": "#FF6B6B"
+          }
+        }
+      },
+      {
+        "id": "regional_competitiveness_map",
+        "type": "Map Visual",
+        "title": "Server Competitiveness Heatmap",
+        "location": "RegionalDifficulty[country]",
+        "size": "RegionalDifficulty[server_competitiveness]",
+        "color": "RegionalDifficulty[multiplier]"
+      }
+    ]
+  },
+  "power_bi_filters": {
+    "description": "Recommended slicer filters for interactive dashboard",
+    "slicers": [
+      {
+        "name": "Region Filter",
+        "source": "Players[region]",
+        "type": "Dropdown Multi-Select",
+        "default": ["KR", "CN", "IN", "VN"]
+      },
+      {
+        "name": "Professional Status",
+        "source": "Players[is_professional]",
+        "type": "Toggle",
+        "options": ["Amateur Only", "Professional Only", "Both"]
+      },
+      {
+        "name": "Rank Tier",
+        "source": "Players[rank]",
+        "type": "Checkbox",
+        "hierarchy": ["challenger", "grandmaster", "master", "diamond"]
+      },
+      {
+        "name": "Archetype Filter",
+        "source": "Players[player_archetype]",
+        "type": "Button Grid",
+        "visual_style": "Icon + Label"
+      },
+      {
+        "name": "Skill Threshold",
+        "source": "CalculatedScores[adjusted_global_score]",
+        "type": "Range Slider",
+        "min": 0,
+        "max": 100,
+        "default": [70, 100]
+      }
+    ]
+  },
+  "dax_formulas": {
+    "description": "DAX formulas for calculated measures in Power BI",
+    "measures": [
+      {
+        "name": "Weighted Skill Average",
+        "formula": "SUMX(\n    MechanicalSkills,\n    [micro_mechanics] * 0.20 +\n    [macro_awareness] * 0.18 +\n    [consistency] * 0.15 +\n    [adaptability] * 0.12 +\n    [team_synergy] * 0.15 +\n    [mechanical_ceiling] * 0.20\n)"
+      },
+      {
+        "name": "Adjusted Global Score",
+        "formula": "DIVIDE(\n    [Weighted Skill Average] * RELATED(RegionalDifficulty[multiplier]),\n    1.20\n) * 100"
+      },
+      {
+        "name": "Amateur vs Pro Avg Delta",
+        "formula": "VAR AmateurAvg = CALCULATE([Weighted Skill Average], Players[is_professional] = FALSE)\nVAR ProAvg = CALCULATE([Weighted Skill Average], Players[is_professional] = TRUE)\nRETURN AmateurAvg - ProAvg"
+      },
+      {
+        "name": "Regional Talent Density",
+        "formula": "COUNTROWS(\n    FILTER(\n        Players,\n        [adjusted_global_score] >= 80\n    )\n) / COUNTROWS(Players)"
+      },
+      {
+        "name": "Top 10% Threshold",
+        "formula": "PERCENTILE.INC(\n    CalculatedScores[adjusted_global_score],\n    0.90\n)"
+      }
+    ]
+  },
+  "sample_data": {
+    "description": "Sample data for testing Power BI dashboard (20 players)",
+    "players": [
+      {
+        "player_id": "KR_FAKER_001",
+        "nickname": "Faker",
+        "country_code": "KR",
+        "region": "KR",
+        "rank": "challenger",
+        "team": "T1",
+        "is_professional": true,
+        "player_archetype": "versatile_all_rounder",
+        "skills": {
+          "micro_mechanics": 95,
+          "macro_awareness": 98,
+          "consistency": 92,
+          "adaptability": 96,
+          "team_synergy": 90,
+          "mechanical_ceiling": 97
+        }
+      },
+      {
+        "player_id": "KR_AMATEUR_001",
+        "nickname": "KoreanProdigy23",
+        "country_code": "KR",
+        "region": "KR",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "mechanical_prodigy",
+        "skills": {
+          "micro_mechanics": 92,
+          "macro_awareness": 78,
+          "consistency": 68,
+          "adaptability": 72,
+          "team_synergy": 65,
+          "mechanical_ceiling": 94
+        }
+      },
+      {
+        "player_id": "CN_JACKEYLOVE_001",
+        "nickname": "JackeyLove",
+        "country_code": "CN",
+        "region": "CN",
+        "rank": "challenger",
+        "team": "Top Esports",
+        "is_professional": true,
+        "player_archetype": "mechanical_prodigy",
+        "skills": {
+          "micro_mechanics": 96,
+          "macro_awareness": 85,
+          "consistency": 88,
+          "adaptability": 82,
+          "team_synergy": 84,
+          "mechanical_ceiling": 98
+        }
+      },
+      {
+        "player_id": "CN_AMATEUR_001",
+        "nickname": "ChineseGrinder88",
+        "country_code": "CN",
+        "region": "CN",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "consistent_grinder",
+        "skills": {
+          "micro_mechanics": 82,
+          "macro_awareness": 88,
+          "consistency": 90,
+          "adaptability": 76,
+          "team_synergy": 80,
+          "mechanical_ceiling": 85
+        }
+      },
+      {
+        "player_id": "IN_AMATEUR_001",
+        "nickname": "IndianRising",
+        "country_code": "IN",
+        "region": "IN",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "consistent_grinder",
+        "skills": {
+          "micro_mechanics": 78,
+          "macro_awareness": 82,
+          "consistency": 88,
+          "adaptability": 80,
+          "team_synergy": 85,
+          "mechanical_ceiling": 82
+        }
+      },
+      {
+        "player_id": "IN_AMATEUR_002",
+        "nickname": "MumbaiMechanics",
+        "country_code": "IN",
+        "region": "IN",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "mechanical_prodigy",
+        "skills": {
+          "micro_mechanics": 85,
+          "macro_awareness": 72,
+          "consistency": 70,
+          "adaptability": 68,
+          "team_synergy": 65,
+          "mechanical_ceiling": 88
+        }
+      },
+      {
+        "player_id": "VN_LEVI_001",
+        "nickname": "Levi",
+        "country_code": "VN",
+        "region": "VN",
+        "rank": "challenger",
+        "team": "GAM Esports",
+        "is_professional": true,
+        "player_archetype": "tactical_mastermind",
+        "skills": {
+          "micro_mechanics": 88,
+          "macro_awareness": 94,
+          "consistency": 90,
+          "adaptability": 86,
+          "team_synergy": 92,
+          "mechanical_ceiling": 90
+        }
+      },
+      {
+        "player_id": "VN_AMATEUR_001",
+        "nickname": "SaigonSniper",
+        "country_code": "VN",
+        "region": "VN",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "high_ceiling_prospect",
+        "skills": {
+          "micro_mechanics": 86,
+          "macro_awareness": 80,
+          "consistency": 75,
+          "adaptability": 82,
+          "team_synergy": 78,
+          "mechanical_ceiling": 90
+        }
+      },
+      {
+        "player_id": "JP_EVI_001",
+        "nickname": "Evi",
+        "country_code": "JP",
+        "region": "JP",
+        "rank": "challenger",
+        "team": "DetonatioN FocusMe",
+        "is_professional": true,
+        "player_archetype": "tactical_mastermind",
+        "skills": {
+          "micro_mechanics": 84,
+          "macro_awareness": 92,
+          "consistency": 88,
+          "adaptability": 90,
+          "team_synergy": 86,
+          "mechanical_ceiling": 86
+        }
+      },
+      {
+        "player_id": "JP_AMATEUR_001",
+        "nickname": "TokyoTactician",
+        "country_code": "JP",
+        "region": "JP",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "tactical_mastermind",
+        "skills": {
+          "micro_mechanics": 76,
+          "macro_awareness": 90,
+          "consistency": 84,
+          "adaptability": 82,
+          "team_synergy": 88,
+          "mechanical_ceiling": 78
+        }
+      },
+      {
+        "player_id": "SEA_AMATEUR_001",
+        "nickname": "SingaporeStar",
+        "country_code": "SG",
+        "region": "SEA",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "versatile_all_rounder",
+        "skills": {
+          "micro_mechanics": 80,
+          "macro_awareness": 82,
+          "consistency": 80,
+          "adaptability": 84,
+          "team_synergy": 78,
+          "mechanical_ceiling": 82
+        }
+      },
+      {
+        "player_id": "KR_AMATEUR_002",
+        "nickname": "SeoulMechanics",
+        "country_code": "KR",
+        "region": "KR",
+        "rank": "challenger",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "high_ceiling_prospect",
+        "skills": {
+          "micro_mechanics": 94,
+          "macro_awareness": 82,
+          "consistency": 76,
+          "adaptability": 88,
+          "team_synergy": 72,
+          "mechanical_ceiling": 96
+        }
+      },
+      {
+        "player_id": "CN_AMATEUR_002",
+        "nickname": "BeijingBeast",
+        "country_code": "CN",
+        "region": "CN",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "high_ceiling_prospect",
+        "skills": {
+          "micro_mechanics": 90,
+          "macro_awareness": 84,
+          "consistency": 74,
+          "adaptability": 80,
+          "team_synergy": 76,
+          "mechanical_ceiling": 92
+        }
+      },
+      {
+        "player_id": "IN_AMATEUR_003",
+        "nickname": "DelhiDominator",
+        "country_code": "IN",
+        "region": "IN",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "consistent_grinder",
+        "skills": {
+          "micro_mechanics": 76,
+          "macro_awareness": 80,
+          "consistency": 86,
+          "adaptability": 78,
+          "team_synergy": 82,
+          "mechanical_ceiling": 78
+        }
+      },
+      {
+        "player_id": "VN_AMATEUR_002",
+        "nickname": "HanoiHero",
+        "country_code": "VN",
+        "region": "VN",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "consistent_grinder",
+        "skills": {
+          "micro_mechanics": 80,
+          "macro_awareness": 84,
+          "consistency": 88,
+          "adaptability": 76,
+          "team_synergy": 80,
+          "mechanical_ceiling": 82
+        }
+      },
+      {
+        "player_id": "JP_AMATEUR_002",
+        "nickname": "OsakaOutplay",
+        "country_code": "JP",
+        "region": "JP",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "mechanical_prodigy",
+        "skills": {
+          "micro_mechanics": 88,
+          "macro_awareness": 76,
+          "consistency": 72,
+          "adaptability": 74,
+          "team_synergy": 68,
+          "mechanical_ceiling": 90
+        }
+      },
+      {
+        "player_id": "SEA_AMATEUR_002",
+        "nickname": "ThaiTiger",
+        "country_code": "TH",
+        "region": "SEA",
+        "rank": "master",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "versatile_all_rounder",
+        "skills": {
+          "micro_mechanics": 78,
+          "macro_awareness": 80,
+          "consistency": 82,
+          "adaptability": 80,
+          "team_synergy": 76,
+          "mechanical_ceiling": 80
+        }
+      },
+      {
+        "player_id": "KR_CHOVY_001",
+        "nickname": "Chovy",
+        "country_code": "KR",
+        "region": "KR",
+        "rank": "challenger",
+        "team": "Gen.G",
+        "is_professional": true,
+        "player_archetype": "versatile_all_rounder",
+        "skills": {
+          "micro_mechanics": 97,
+          "macro_awareness": 94,
+          "consistency": 94,
+          "adaptability": 92,
+          "team_synergy": 88,
+          "mechanical_ceiling": 96
+        }
+      },
+      {
+        "player_id": "CN_THESHY_001",
+        "nickname": "TheShy",
+        "country_code": "CN",
+        "region": "CN",
+        "rank": "challenger",
+        "team": "Weibo Gaming",
+        "is_professional": true,
+        "player_archetype": "mechanical_prodigy",
+        "skills": {
+          "micro_mechanics": 98,
+          "macro_awareness": 82,
+          "consistency": 78,
+          "adaptability": 86,
+          "team_synergy": 80,
+          "mechanical_ceiling": 99
+        }
+      },
+      {
+        "player_id": "IN_AMATEUR_004",
+        "nickname": "BangaloreBlitz",
+        "country_code": "IN",
+        "region": "IN",
+        "rank": "grandmaster",
+        "team": null,
+        "is_professional": false,
+        "player_archetype": "high_ceiling_prospect",
+        "skills": {
+          "micro_mechanics": 84,
+          "macro_awareness": 78,
+          "consistency": 76,
+          "adaptability": 82,
+          "team_synergy": 74,
+          "mechanical_ceiling": 88
+        }
+      }
+    ]
+  }
+}
