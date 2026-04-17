@@ -244,7 +244,7 @@ class MultiRegionIngestor:
         # Circuit Breaker compartido
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=self.config.circuit_breaker_threshold,
-            timeout=self.config.circuit_breaker_timeout
+            timeout_seconds=self.config.circuit_breaker_timeout
         )
         
         # Cache compartido

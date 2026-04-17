@@ -42,6 +42,7 @@ FLAG_TO_COUNTRY = {
     "🇯🇵": CountryCode.JAPAN,
     "🇹🇼": CountryCode.TAIWAN,
     "🇮🇩": CountryCode.INDONESIA,
+    "🇧🇷": CountryCode.BRAZIL,
 }
 
 
@@ -57,6 +58,8 @@ COUNTRY_NAME_TO_CODE = {
     "japan": CountryCode.JAPAN,
     "taiwan": CountryCode.TAIWAN,
     "indonesia": CountryCode.INDONESIA,
+    "brazil": CountryCode.BRAZIL,
+    "brasil": CountryCode.BRAZIL,
     # Nombres en idiomas locales
     "भारत": CountryCode.INDIA,
     "한국": CountryCode.KOREA,

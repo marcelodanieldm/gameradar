@@ -19,6 +19,7 @@ class CountryCode(str, Enum):
     JAPAN = "JP"
     TAIWAN = "TW"
     INDONESIA = "ID"
+    BRAZIL = "BR"
     UNKNOWN = "XX"
 
 
