@@ -43,3 +43,8 @@ uvicorn[standard]==0.27.1
 # Proxy Services (opcional)
 # bright-data==1.0.0
 # scraperapi-sdk==1.0.0
+
+# Silver Layer — Traducción y análisis
+deep-translator==1.11.4
+langdetect==1.0.9
+beautifulsoup4==4.12.3
