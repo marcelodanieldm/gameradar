@@ -48,3 +48,7 @@ uvicorn[standard]==0.27.1
 deep-translator==1.11.4
 langdetect==1.0.9
 beautifulsoup4==4.12.3
+
+# PDF Report Generation (Plan Rookie)
+weasyprint==62.3
+jinja2==3.1.4
