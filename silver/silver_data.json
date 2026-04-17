@@ -1,0 +1,355 @@
+{
+  "_meta": {
+    "run_ts": "2026-04-17T22:31:43.945940+00:00",
+    "total_records": 8,
+    "sources_covered": 4,
+    "translations_applied": 0,
+    "avg_gameradar_score": 4.0642,
+    "score_formula": "(KDA_norm×0.3) + (WinRate_norm×0.4) + (Consistency_norm×0.3)",
+    "normalization_note": "Todas las métricas normalizadas a [0,10] antes de ponderar. Score final en [0,10].",
+    "by_source": {
+      "dakgg": {
+        "count": 2,
+        "avg_score": 4.1885,
+        "max_score": 4.257,
+        "min_score": 4.12,
+        "top_3_scores": [
+          4.257,
+          4.12
+        ]
+      },
+      "opgg_kr": {
+        "count": 2,
+        "avg_score": 3.8249,
+        "max_score": 3.8308,
+        "min_score": 3.819,
+        "top_3_scores": [
+          3.8308,
+          3.819
+        ]
+      },
+      "tec_india": {
+        "count": 2,
+        "avg_score": 4.7825,
+        "max_score": 4.975,
+        "min_score": 4.59,
+        "top_3_scores": [
+          4.975,
+          4.59
+        ]
+      },
+      "wanplus": {
+        "count": 2,
+        "avg_score": 3.461,
+        "max_score": 3.508,
+        "min_score": 3.414,
+        "top_3_scores": [
+          3.508,
+          3.414
+        ]
+      }
+    }
+  },
+  "players": [
+    {
+      "nickname": "Shadow",
+      "real_name": "Arjun Sharma",
+      "team": "Team Viper",
+      "role": "Jungle",
+      "rank": "Diamond I",
+      "country": "IN",
+      "server": "India",
+      "game": "LOL",
+      "profile_url": "https://theesportsclub.com/player/Shadow",
+      "gameradar_score": 4.975,
+      "score_components": {
+        "kda_raw": 3.2,
+        "kda_normalized": 2.1333,
+        "kda_weighted": 0.64,
+        "win_rate_raw": 54.0,
+        "win_rate_normalized": 5.4,
+        "win_rate_weighted": 2.16,
+        "consistency_raw": 72.5,
+        "consistency_normalized": 7.25,
+        "consistency_weighted": 2.175
+      },
+      "score_formula": "(2.133 × 0.3) + (5.4 × 0.4) + (7.25 × 0.3)",
+      "stats": {
+        "win_rate": 54.0,
+        "kda": 3.2,
+        "games_analyzed": 60,
+        "tournament_participations": 12,
+        "consistency_score": 72.5,
+        "community_rating": 8.1,
+        "consistency_index": 72.5
+      },
+      "_source": "tec_india",
+      "_bronze_file": "bronze\\tec_india\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "Clutch",
+      "real_name": "Priya Nair",
+      "team": "Navi India",
+      "role": "ADC",
+      "rank": "Platinum II",
+      "country": "IN",
+      "server": "India",
+      "game": "LOL",
+      "profile_url": "https://theesportsclub.com/player/Clutch",
+      "gameradar_score": 4.59,
+      "score_components": {
+        "kda_raw": 2.9,
+        "kda_normalized": 1.9333,
+        "kda_weighted": 0.58,
+        "win_rate_raw": 51.5,
+        "win_rate_normalized": 5.15,
+        "win_rate_weighted": 2.06,
+        "consistency_raw": 65.0,
+        "consistency_normalized": 6.5,
+        "consistency_weighted": 1.95
+      },
+      "score_formula": "(1.933 × 0.3) + (5.15 × 0.4) + (6.5 × 0.3)",
+      "stats": {
+        "win_rate": 51.5,
+        "kda": 2.9,
+        "games_analyzed": 45,
+        "tournament_participations": 7,
+        "consistency_score": 65.0,
+        "community_rating": 7.5,
+        "consistency_index": 65.0
+      },
+      "_source": "tec_india",
+      "_bronze_file": "bronze\\tec_india\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "Chovy",
+      "real_name": "정지훈",
+      "team": "Gen.G",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "profile_url": "https://dak.gg/lol/players/Chovy",
+      "gameradar_score": 4.257,
+      "score_components": {
+        "kda_raw": 7.3,
+        "kda_normalized": 4.8667,
+        "kda_weighted": 1.46,
+        "win_rate_raw": 68.5,
+        "win_rate_normalized": 6.85,
+        "win_rate_weighted": 2.74,
+        "consistency_raw": 1.9,
+        "consistency_normalized": 0.19,
+        "consistency_weighted": 0.057
+      },
+      "score_formula": "(4.867 × 0.3) + (6.85 × 0.4) + (0.19 × 0.3)",
+      "stats": {
+        "win_rate": 68.5,
+        "kda": 7.3,
+        "games_analyzed": 95,
+        "consistency_index": 1.9
+      },
+      "_source": "dakgg",
+      "_bronze_file": "bronze\\dakgg\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "Faker",
+      "real_name": "이상혁",
+      "team": "T1",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "profile_url": "https://dak.gg/lol/players/Faker",
+      "gameradar_score": 4.12,
+      "score_components": {
+        "kda_raw": 6.1,
+        "kda_normalized": 4.0667,
+        "kda_weighted": 1.22,
+        "win_rate_raw": 71.0,
+        "win_rate_normalized": 7.1,
+        "win_rate_weighted": 2.84,
+        "consistency_raw": 2.0,
+        "consistency_normalized": 0.2,
+        "consistency_weighted": 0.06
+      },
+      "score_formula": "(4.067 × 0.3) + (7.1 × 0.4) + (0.2 × 0.3)",
+      "stats": {
+        "win_rate": 71.0,
+        "kda": 6.1,
+        "games_analyzed": 100,
+        "consistency_index": 2.0
+      },
+      "_source": "dakgg",
+      "_bronze_file": "bronze\\dakgg\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "Keria",
+      "real_name": "류민석",
+      "team": "T1",
+      "role": "Support",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "profile_url": "https://op.gg/summoners/kr/Keria",
+      "gameradar_score": 3.8308,
+      "score_components": {
+        "kda_raw": 4.9,
+        "kda_normalized": 3.2667,
+        "kda_weighted": 0.98,
+        "win_rate_raw": 70.1,
+        "win_rate_normalized": 7.01,
+        "win_rate_weighted": 2.804,
+        "consistency_raw": 1.56,
+        "consistency_normalized": 0.156,
+        "consistency_weighted": 0.0468
+      },
+      "score_formula": "(3.267 × 0.3) + (7.01 × 0.4) + (0.156 × 0.3)",
+      "stats": {
+        "win_rate": 70.1,
+        "kda": 4.9,
+        "games_analyzed": 78,
+        "lp": 1380,
+        "consistency_index": 1.56
+      },
+      "_source": "opgg_kr",
+      "_bronze_file": "bronze\\opgg_kr\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "ShowMaker",
+      "real_name": "허수",
+      "team": "DK",
+      "role": "Mid",
+      "rank": "Challenger",
+      "country": "KR",
+      "server": "KR",
+      "game": "LOL",
+      "profile_url": "https://op.gg/summoners/kr/ShowMaker",
+      "gameradar_score": 3.819,
+      "score_components": {
+        "kda_raw": 5.8,
+        "kda_normalized": 3.8667,
+        "kda_weighted": 1.16,
+        "win_rate_raw": 65.2,
+        "win_rate_normalized": 6.52,
+        "win_rate_weighted": 2.608,
+        "consistency_raw": 1.7,
+        "consistency_normalized": 0.17,
+        "consistency_weighted": 0.051
+      },
+      "score_formula": "(3.867 × 0.3) + (6.52 × 0.4) + (0.17 × 0.3)",
+      "stats": {
+        "win_rate": 65.2,
+        "kda": 5.8,
+        "games_analyzed": 85,
+        "lp": 1450,
+        "consistency_index": 1.7
+      },
+      "_source": "opgg_kr",
+      "_bronze_file": "bronze\\opgg_kr\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "JackeyLove",
+      "real_name": "于佳伟",
+      "team": "iG战队",
+      "role": "射手",
+      "rank": "Challenger",
+      "country": "CN",
+      "server": "Ionia",
+      "game": "LOL",
+      "profile_url": "https://www.wanplus.com/lol/player/JackeyLove",
+      "gameradar_score": 3.508,
+      "score_components": {
+        "kda_raw": 4.8,
+        "kda_normalized": 3.2,
+        "kda_weighted": 0.96,
+        "win_rate_raw": 62.5,
+        "win_rate_normalized": 6.25,
+        "win_rate_weighted": 2.5,
+        "consistency_raw": 1.6,
+        "consistency_normalized": 0.16,
+        "consistency_weighted": 0.048
+      },
+      "score_formula": "(3.2 × 0.3) + (6.25 × 0.4) + (0.16 × 0.3)",
+      "stats": {
+        "win_rate": 62.5,
+        "kda": 4.8,
+        "games_analyzed": 80,
+        "apm": 320,
+        "gold_per_min": 450,
+        "consistency_index": 1.6
+      },
+      "_source": "wanplus",
+      "_bronze_file": "bronze\\wanplus\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    },
+    {
+      "nickname": "Knight",
+      "real_name": "朱晓龙",
+      "team": "TES",
+      "role": "中单",
+      "rank": "Challenger",
+      "country": "CN",
+      "server": "Ionia",
+      "game": "LOL",
+      "profile_url": "https://www.wanplus.com/lol/player/Knight",
+      "gameradar_score": 3.414,
+      "score_components": {
+        "kda_raw": 5.2,
+        "kda_normalized": 3.4667,
+        "kda_weighted": 1.04,
+        "win_rate_raw": 58.0,
+        "win_rate_normalized": 5.8,
+        "win_rate_weighted": 2.32,
+        "consistency_raw": 1.8,
+        "consistency_normalized": 0.18,
+        "consistency_weighted": 0.054
+      },
+      "score_formula": "(3.467 × 0.3) + (5.8 × 0.4) + (0.18 × 0.3)",
+      "stats": {
+        "win_rate": 58.0,
+        "kda": 5.2,
+        "games_analyzed": 90,
+        "apm": 310,
+        "gold_per_min": 440,
+        "consistency_index": 1.8
+      },
+      "_source": "wanplus",
+      "_bronze_file": "bronze\\wanplus\\2026-04-17.json",
+      "_bronze_date": "2026-04-17",
+      "_silver_ts": "2026-04-17T22:31:43.945940+00:00",
+      "_partial": false,
+      "_translations_applied": 0
+    }
+  ]
+}

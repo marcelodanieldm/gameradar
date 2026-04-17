@@ -1,362 +1,269 @@
-# 🎮 GameRadar AI - Comandos Útiles
+﻿# GameRadar AI — Commands Reference
 
-## 📦 Setup Inicial
+> **Last updated:** April 2026 · HEAD `95078a3`  
+> All commands assume venv is activated or use the explicit `.venv\Scripts\python.exe` prefix.
 
-```bash
-# Clonar repositorio
-git clone https://github.com/tu-usuario/gameradar-ai.git
-cd gameradar-ai
+---
 
-# Crear entorno virtual
-python -m venv venv
+## Setup
 
-# Activar entorno virtual
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+```powershell
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 
-# Instalar dependencias
+# Install all dependencies
 pip install -r requirements.txt
 
-# Instalar Playwright
-playwright install chromium
-
-# Copiar .env
-cp .env.example .env
-# Editar .env con tus credenciales
-```
-
-## 🧪 Testing
-
-```bash
-# Ejecutar todos los tests
-python test_ninja_scraper.py
-
-# Ejecutar ejemplos
-python examples.py
-
-# Test del scraper ninja
-python cnn_brasil_scraper.py
-```
-
-## 🥷 Scraper Ninja
-
-```bash
-# Ejecutar scraper (sin proxies)
-python cnn_brasil_scraper.py
-
-# Ver logs del scraper
-tail -f ninja_scraper.log
-
-# Limpiar logs
-rm *.log
-```
-
-## 🗄️ Base de Datos
-
-```bash
-# Conectar a Supabase (usando psql)
-# Obtener connection string de Supabase Dashboard → Settings → Database
-psql "postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres"
-
-# Queries útiles
-psql -c "SELECT COUNT(*) FROM bronze_raw_data WHERE source = 'cnn_brasil';"
-psql -c "SELECT COUNT(*) FROM silver_players WHERE country = 'IN';"
-psql -c "SELECT nickname, country, rank FROM silver_players LIMIT 10;"
-```
-
-## 📊 Pipeline Completo
-
-```bash
-# Ejecutar pipeline completo (Scraping → Bronze → Silver → Gold → Airtable)
-python pipeline.py
-
-# Ver logs del pipeline
-tail -f gameradar_pipeline.log
-```
-
-## 🔍 Búsqueda y Análisis
-
-```python
-# En Python shell
-from supabase_client import SupabaseClient
-
-db = SupabaseClient()
-
-# Top jugadores de India
-players = db.get_players_by_country("IN", game="LOL", limit=10)
-for p in players:
-    print(f"{p['nickname']}: {p['rank']}")
-
-# Búsqueda difusa
-results = db.search_players_by_nickname_fuzzy("Faker")
-
-# Estadísticas por región
-stats = db.get_stats_by_region()
-for s in stats:
-    print(f"{s['country']}: {s['total_players']} jugadores")
-```
-
-## 🐛 Debugging
-
-```bash
-# Ejecutar con logs verbose
-export LOG_LEVEL=DEBUG
-python cnn_brasil_scraper.py
-
-# Ver browser durante scraping (cambiar en código)
-# En cnn_brasil_scraper.py:
-# headless=False
-
-# Debug de Playwright
-playwright codegen https://www.cnnbrasil.com.br/esportes/outros-esportes/e-sports/
-
-# Ver selectores disponibles
-playwright show-trace trace.zip
-```
-
-## 📤 Git & GitHub
-
-```bash
-# Primer push
-git add .
-git commit -m "🎮 Initial commit - GameRadar AI"
-git push origin main
-
-# Push de cambios
-git add .
-git commit -m "🥷 Update ninja scraper"
-git push
-
-# Ver status
-git status
-
-# Ver logs
-git log --oneline
-
-# Crear nueva rama
-git checkout -b feature/nueva-funcionalidad
-```
-
-## ⚙️ GitHub Actions
-
-```bash
-# Ver workflows
-gh workflow list
-
-# Ejecutar workflow manualmente
-gh workflow run "🥷 Ninja E-sports Scraper"
-
-# Ver runs
-gh run list
-
-# Ver logs de un run
-gh run view [RUN_ID] --log
-
-# Descargar artifacts
-gh run download [RUN_ID]
-```
-
-## 🔐 Secrets Management
-
-```bash
-# Listar secrets (usando GitHub CLI)
-gh secret list
-
-# Añadir secret
-gh secret set SUPABASE_URL
-
-# Eliminar secret
-gh secret remove OLD_SECRET
-```
-
-## 📦 Dependencias
-
-```bash
-# Actualizar todas las dependencias
-pip install --upgrade -r requirements.txt
-
-# Instalar nueva dependencia
-pip install nueva-libreria
-pip freeze > requirements.txt
-
-# Ver dependencias instaladas
-pip list
-
-# Ver dependencias desactualizadas
-pip list --outdated
-```
-
-## 🚀 Deployment
-
-```bash
-# Build para producción (si aplica)
-python -m build
-
-# Crear release tag
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
-
-# Ver tags
-git tag -l
-```
-
-## 🧹 Limpieza
-
-```bash
-# Limpiar cache de Python
-find . -type d -name "__pycache__" -exec rm -rf {} +
-find . -type f -name "*.pyc" -delete
-
-# Limpiar logs
-rm *.log
-
-# Limpiar build artifacts
-rm -rf build/ dist/ *.egg-info/
-
-# Limpiar todo
-git clean -fdx  # ⚠️ Cuidado: elimina todo lo no trackeado
-```
-
-## 📊 Estadísticas
-
-```bash
-# Contar líneas de código
-find . -name "*.py" | xargs wc -l
-
-# Ver archivos más grandes
-du -h *.py | sort -h
-
-# Ver commits por autor
-git shortlog -sn
-
-# Ver actividad del repo
-git log --since="1 week ago" --oneline
-```
-
-## 🔄 Actualización
-
-```bash
-# Actualizar desde GitHub
-git pull origin main
-
-# Reinstalar dependencias
-pip install -r requirements.txt --upgrade
-
-# Reinstalar Playwright
-playwright install chromium --force
-```
-
-## 🆘 Help & Docs
-
-```bash
-# Ver ayuda de un comando
-python cnn_brasil_scraper.py --help
-
-# Ver documentación de Playwright
-playwright --help
-
-# Ver documentación de GitHub CLI
-gh --help
-
-# Abrir documentación en browser
-# README: README.md
-# Ninja Scraper: NINJA_SCRAPER.md
-# Setup: GITHUB_SETUP.md
-# Resumen: NINJA_SUMMARY.md
-```
-
-## 📝 Comandos SQL Útiles
-
-```sql
--- Ver datos recientes de Bronze
-SELECT 
-    id, 
-    source, 
-    processing_status,
-    scraped_at 
-FROM bronze_raw_data 
-ORDER BY scraped_at DESC 
-LIMIT 10;
-
--- Ver jugadores de India con tag
-SELECT 
-    nickname,
-    country,
-    rank,
-    raw_data->'tags' as tags
-FROM bronze_raw_data 
-WHERE raw_data->'tags' @> '["Region: India"]';
-
--- Top jugadores por win rate
-SELECT 
-    nickname,
-    country,
-    (stats->>'win_rate')::DECIMAL as win_rate,
-    (stats->>'kda')::DECIMAL as kda
-FROM silver_players
-ORDER BY (stats->>'win_rate')::DECIMAL DESC
-LIMIT 20;
-
--- Estadísticas por país
-SELECT 
-    country,
-    COUNT(*) as total_players,
-    AVG((stats->>'win_rate')::DECIMAL) as avg_win_rate
-FROM silver_players
-GROUP BY country
-ORDER BY total_players DESC;
-
--- Ver logs de procesamiento
-SELECT 
-    processing_status,
-    COUNT(*) as count
-FROM bronze_raw_data
-GROUP BY processing_status;
-
--- Buscar jugador por nombre (Unicode safe)
-SELECT 
-    nickname,
-    country,
-    rank
-FROM silver_players
-WHERE nickname ILIKE '%faker%';
-```
-
-## 🎯 Shortcuts Útiles
-
-```bash
-# Alias útiles (añadir a .bashrc o .zshrc)
-alias gr='cd ~/gameradar-ai'
-alias grs='python cnn_brasil_scraper.py'
-alias grt='python test_ninja_scraper.py'
-alias grp='python pipeline.py'
-alias grl='tail -f *.log'
-
-# Function para ver logs de GitHub Actions
-ghlog() {
-    gh run list --limit 1 --json databaseId --jq '.[0].databaseId' | xargs gh run view --log
-}
-```
-
-## 💡 Tips
-
-```bash
-# Ejecutar en background
-nohup python cnn_brasil_scraper.py > scraper.log 2>&1 &
-
-# Programar ejecución local (cron)
-# Editar crontab:
-crontab -e
-
-# Añadir línea (ejecutar cada 6 horas):
-0 */6 * * * cd ~/gameradar-ai && /path/to/venv/bin/python cnn_brasil_scraper.py
-
-# Ver trabajos programados:
-crontab -l
+# Install Playwright browser
+.venv\Scripts\playwright.exe install chromium
 ```
 
 ---
 
-**Pro tip**: Crea un alias para los comandos que uses frecuentemente! 🚀
+## Bronze Ingestion
+
+### Run all 11 sources
+```powershell
+.venv\Scripts\python.exe ingest_bronze_targets.py
+```
+
+### Run specific sources only
+```powershell
+.venv\Scripts\python.exe ingest_bronze_targets.py --sources opgg_kr opgg_jp dak_gg
+```
+
+### Dry run (no writes)
+```powershell
+.venv\Scripts\python.exe ingest_bronze_targets.py --dry-run
+```
+
+### Available source names
+```
+opgg_kr   opgg_jp   dak_gg   vcs_vn   vlr_sea   lck_site
+liquipedia_lol  wanplus_cn  pentaq_cn  gamesee_in  cnn_brasil
+```
+
+### Run legacy scrapers
+```powershell
+.venv\Scripts\python.exe run_working_scrapers.py
+.venv\Scripts\python.exe run_all_scrapers.py
+.venv\Scripts\python.exe scrapers.py
+```
+
+---
+
+## Silver ETL
+
+### Run ETL (translate + score + dedupe)
+```powershell
+.venv\Scripts\python.exe bronze_to_silver.py
+```
+
+### Skip translation (faster, offline)
+```powershell
+.venv\Scripts\python.exe bronze_to_silver.py --no-translate
+```
+
+### Process only records after a date
+```powershell
+.venv\Scripts\python.exe bronze_to_silver.py --since 2026-01-01
+```
+
+### Dry run (print stats, no write)
+```powershell
+.venv\Scripts\python.exe bronze_to_silver.py --dry-run
+```
+
+### Custom input/output paths
+```powershell
+.venv\Scripts\python.exe bronze_to_silver.py --bronze-dir ./bronze --output ./silver/silver_data.json
+```
+
+---
+
+## Power BI API
+
+### Start the API server (Windows shortcut)
+```powershell
+.\start_api.bat
+```
+
+### Start manually
+```powershell
+.venv\Scripts\python.exe -m uvicorn api_powerbi:app --host 127.0.0.1 --port 8000
+```
+
+### API Endpoints
+```powershell
+# Health check
+curl http://127.0.0.1:8000/
+
+# Detailed status (loaded players, last sync)
+curl http://127.0.0.1:8000/status
+
+# Force reload from silver_data.json
+curl -X POST http://127.0.0.1:8000/sync
+
+# Export players for Power BI (JSON)
+curl http://127.0.0.1:8000/export/players
+
+# Export with filters
+curl "http://127.0.0.1:8000/export/players?region=Korea&min_score=7.0&limit=50"
+
+# Export metadata / column schema
+curl http://127.0.0.1:8000/export/schema
+
+# Export full payload (players + meta)
+curl http://127.0.0.1:8000/export
+```
+
+### Power BI connection
+```
+1. Get Data → Web
+2. URL: http://127.0.0.1:8000/export/players
+3. Format: JSON
+4. Transform: expand "players" list column
+```
+
+---
+
+## PDF Reports
+
+### Generate report for current month (PDF)
+```powershell
+.venv\Scripts\python.exe generate_report.py
+```
+
+### Specify output file
+```powershell
+.venv\Scripts\python.exe generate_report.py --output reports/april_2026.pdf
+```
+
+### Set month label and top-N players
+```powershell
+.venv\Scripts\python.exe generate_report.py --month "April 2026" --top 10
+```
+
+### HTML-only mode (no WeasyPrint / GTK required)
+```powershell
+.venv\Scripts\python.exe generate_report.py --html-only
+```
+
+### Filter by week
+```powershell
+.venv\Scripts\python.exe generate_report.py --week 2026-W15
+```
+
+### Generate without auto-opening result
+```powershell
+.venv\Scripts\python.exe generate_report.py --no-open
+```
+
+---
+
+## Tests
+
+### Run all tests
+```powershell
+.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+### Run by module
+```powershell
+.venv\Scripts\python.exe -m pytest test_scrapers_diagnostico.py -v
+.venv\Scripts\python.exe -m pytest test_multi_region_ingestor.py -v
+.venv\Scripts\python.exe -m pytest test_regional_connectors.py -v
+.venv\Scripts\python.exe -m pytest test_universal_aggregator.py -v
+.venv\Scripts\python.exe -m pytest test_ninja_scraper.py -v
+.venv\Scripts\python.exe -m pytest test_e2e_playwright.py -v
+```
+
+### Quick smoke test (diagnostic)
+```powershell
+.venv\Scripts\python.exe test_scrapers_diagnostico.py
+```
+
+### Debug OP.GG scraper
+```powershell
+.venv\Scripts\python.exe debug_opgg.py
+```
+
+---
+
+## Semantic Search / Embeddings
+
+### Generate embeddings
+```powershell
+.venv\Scripts\python.exe embedding_generator.py
+```
+
+### Build skill vectors (4D pgvector)
+```powershell
+.venv\Scripts\python.exe skill_vector_embeddings.py
+```
+
+### Test semantic search
+```powershell
+.venv\Scripts\python.exe semantic_search_examples.py
+```
+
+---
+
+## Database
+
+### Push SQL schema to Supabase
+```powershell
+# Run in Supabase SQL Editor (dashboard.supabase.com):
+#   database_schema.sql
+#   ingestion_logs_schema.sql
+#   gold_analytics.sql
+#   search_similar_players_rpc.sql
+```
+
+---
+
+## Frontend
+
+```powershell
+cd frontend
+
+# Install dependencies
+npm install
+
+# Development server
+npm run dev          # http://localhost:3000
+
+# Production build
+npm run build
+npm start
+
+# Lint
+npm run lint
+```
+
+---
+
+## Git / CI
+
+### Manual trigger for bronze ingestion workflow
+```powershell
+gh workflow run bronze_strategic.yml
+gh workflow run bronze_strategic.yml -f sources=opgg_kr,dak_gg -f dry_run=true
+```
+
+### Check latest run
+```powershell
+gh run list --workflow=bronze_strategic.yml --limit 5
+```
+
+### Commit documentation changes
+```powershell
+git add README.md ARCHITECTURE_OVERVIEW.md INDEX.md COMMANDS.md GITHUB_ACTIONS_SETUP.md
+git commit -m "docs: update documentation for all iterations"
+git push origin main
+```
+
+---
+
+*See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for secrets configuration and workflow troubleshooting.*

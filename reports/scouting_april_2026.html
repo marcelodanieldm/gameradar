@@ -1,0 +1,1677 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameRadar AI — Scouting Report · April 2026</title>
+  <style>
+    /* ────────────────────────────────────────────────────────────────────────
+       RESET & BASE
+    ──────────────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #0f172a;   /* slate-900 */
+      --bg-card:      #1e293b;   /* slate-800 */
+      --bg-card-alt:  #162032;   /* slate-850 custom */
+      --bg-row-alt:   #1a2540;
+      --border:       #334155;   /* slate-700 */
+      --cyan:         #38bdf8;   /* sky-400 — brand accent */
+      --cyan-dim:     #0ea5e9;   /* sky-500 */
+      --cyan-glow:    rgba(56,189,248,.18);
+      --text-primary: #f1f5f9;   /* slate-100 */
+      --text-muted:   #94a3b8;   /* slate-400 */
+      --text-dim:     #64748b;   /* slate-500 */
+      --gold:         #fbbf24;   /* amber-400 */
+      --green:        #34d399;   /* emerald-400 */
+      --red:          #f87171;   /* red-400 */
+      --purple:       #a78bfa;   /* violet-400 */
+      --page-w:       794px;     /* A4 @ 96dpi */
+      --page-h:       1123px;
+      --pad:          40px;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    html, body {
+      width:  var(--page-w);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 1.55;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       PAGE WRAPPER — each .page is one A4 sheet
+    ──────────────────────────────────────────────────────────────────────── */
+    .page {
+      width:  var(--page-w);
+      min-height: var(--page-h);
+      padding: var(--pad);
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    /* Subtle grid overlay — decorative */
+    .page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56,189,248,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .page > * { position: relative; z-index: 1; }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       HEADER
+    ──────────────────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--cyan);
+      padding-bottom: 18px;
+      margin-bottom: 28px;
+    }
+
+    .logo-block { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: var(--cyan-glow);
+      border: 1.5px solid var(--cyan);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    /* Inline SVG radar-dot icon */
+    .logo-icon svg { width: 26px; height: 26px; }
+
+    .logo-text { line-height: 1.2; }
+    .logo-text .brand {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--cyan);
+    }
+    .logo-text .sub {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+    }
+
+    .report-meta { text-align: right; }
+    .report-meta .report-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .report-meta .report-period {
+      font-size: 9px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-top: 3px;
+    }
+    .report-meta .plan-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 10px;
+      background: var(--cyan-glow);
+      border: 1px solid var(--cyan-dim);
+      border-radius: 20px;
+      font-size: 8px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 600;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       SECTION HEADINGS
+    ──────────────────────────────────────────────────────────────────────── */
+    .section { margin-bottom: 28px; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--cyan);
+      margin-bottom: 14px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+    .section-title .icon { font-size: 13px; }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       SUMMARY STATS ROW
+    ──────────────────────────────────────────────────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      border-top: 2px solid transparent;
+    }
+    .stat-card.accent { border-top-color: var(--cyan); }
+    .stat-card.gold   { border-top-color: var(--gold); }
+    .stat-card.green  { border-top-color: var(--green); }
+    .stat-card.purple { border-top-color: var(--purple); }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+    .stat-card.accent .stat-value { color: var(--cyan); }
+    .stat-card.gold   .stat-value { color: var(--gold); }
+    .stat-card.green  .stat-value { color: var(--green); }
+    .stat-card.purple .stat-value { color: var(--purple); }
+
+    .stat-label {
+      font-size: 8.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      margin-top: 4px;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       TOP 5 TABLE
+    ──────────────────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+
+    thead th {
+      background: var(--bg-card);
+      color: var(--cyan);
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1.5px solid var(--cyan-dim);
+    }
+    thead th:first-child { border-radius: 6px 0 0 0; padding-left: 14px; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody td {
+      padding: 10px 10px;
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    tbody td:first-child { padding-left: 14px; }
+
+    /* Rank badge */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .rank-1 { background: var(--gold); color: #0f172a; }
+    .rank-2 { background: #94a3b8;    color: #0f172a; }
+    .rank-3 { background: #b45309;    color: #fff; }
+    .rank-4, .rank-5 { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* Player cell */
+    .player-cell { display: flex; flex-direction: column; gap: 1px; }
+    .player-nick { font-weight: 700; font-size: 11px; color: var(--text-primary); }
+    .player-real { font-size: 9px; color: var(--text-muted); }
+
+    /* Score bar */
+    .score-cell { display: flex; align-items: center; gap: 8px; }
+    .score-num {
+      font-size: 13px; font-weight: 700;
+      min-width: 34px; text-align: right;
+    }
+    .score-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .score-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
+    }
+
+    /* Region chip */
+    .region-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    .region-KR  { background: rgba(56,189,248,.15); color: var(--cyan); }
+    .region-CN  { background: rgba(251,191,36,.15);  color: var(--gold); }
+    .region-JP  { background: rgba(167,139,250,.15); color: var(--purple); }
+    .region-IN  { background: rgba(52,211,153,.15);  color: var(--green); }
+    .region-SEA, .region-GL { background: rgba(148,163,184,.12); color: var(--text-muted); }
+
+    /* KDA / WR metric cells */
+    .metric-positive { color: var(--green); font-weight: 600; }
+    .metric-neutral  { color: var(--text-primary); }
+    .tag-role {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 8.5px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       RADAR CHART SECTION (inline SVG, two side-by-side)
+    ──────────────────────────────────────────────────────────────────────── */
+    .radar-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .radar-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .radar-player-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .radar-player-sub {
+      font-size: 8.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .radar-svg { overflow: visible; }
+
+    .radar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 8px;
+      color: var(--text-muted);
+    }
+    .legend-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       GLOSSARY
+    ──────────────────────────────────────────────────────────────────────── */
+    .glossary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .glossary-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan-dim);
+      border-radius: 0 6px 6px 0;
+      padding: 9px 12px;
+    }
+
+    .glossary-term {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .glossary-original {
+      font-size: 8px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    .glossary-def {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       FORMULA BLOCK
+    ──────────────────────────────────────────────────────────────────────── */
+    .formula-block {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+    .formula-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .formula-eq {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+    }
+    .formula-eq .w-kda    { color: var(--cyan); }
+    .formula-eq .w-wr     { color: var(--green); }
+    .formula-eq .w-cons   { color: var(--purple); }
+    .formula-note {
+      font-size: 8.5px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       SOURCES FOOTER STRIP
+    ──────────────────────────────────────────────────────────────────────── */
+    .sources-strip {
+      margin-top: 16px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .sources-label {
+      font-size: 8px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .source-tag {
+      font-size: 8px;
+      color: var(--text-muted);
+      padding: 1px 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       PAGE FOOTER
+    ──────────────────────────────────────────────────────────────────────── */
+    .page-footer {
+      position: absolute;
+      bottom: 20px;
+      left: var(--pad);
+      right: var(--pad);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+    .footer-left {
+      font-size: 8px;
+      color: var(--text-dim);
+    }
+    .footer-right {
+      font-size: 8px;
+      color: var(--text-dim);
+    }
+    .footer-center {
+      font-size: 8px;
+      color: var(--cyan);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────
+       WATERMARK (confidential)
+    ──────────────────────────────────────────────────────────────────────── */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 72px;
+      font-weight: 900;
+      color: rgba(56,189,248,.04);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 1 — TOP 5 + RADAR CHARTS
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="watermark">CONFIDENTIAL</div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="13" cy="13" r="11" stroke="#38bdf8" stroke-width="1.5" opacity=".4"/>
+          <circle cx="13" cy="13" r="7"  stroke="#38bdf8" stroke-width="1.5" opacity=".6"/>
+          <circle cx="13" cy="13" r="3"  fill="#38bdf8"/>
+          <line x1="13" y1="2"  x2="13" y2="6"  stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="13" y1="20" x2="13" y2="24" stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="2"  y1="13" x2="6"  y2="13" stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="20" y1="13" x2="24" y2="13" stroke="#38bdf8" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="brand">GameRadar AI</div>
+        <div class="sub">Asian Esports Intelligence Platform</div>
+      </div>
+    </div>
+    <div class="report-meta">
+      <div class="report-title">Monthly Scouting Report</div>
+      <div class="report-period">April 2026 &nbsp;·&nbsp; Week 3</div>
+      <div class="plan-badge">Rookie Plan — $19/mo</div>
+    </div>
+  </header>
+
+  <!-- SUMMARY STATS -->
+  <div class="stats-row">
+    <div class="stat-card accent">
+      <div class="stat-value">8</div>
+      <div class="stat-label">Players Scouted</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-value">4</div>
+      <div class="stat-label">Regions Covered</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-value">4.06</div>
+      <div class="stat-label">Avg GameRadar Score</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-value">0</div>
+      <div class="stat-label">Fields Auto-Translated</div>
+    </div>
+  </div>
+
+  <!-- TOP 5 TABLE -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon">🏆</span> Top 5 Players of the Week
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>Player</th>
+          <th>Region</th>
+          <th>Role</th>
+          <th>KDA</th>
+          <th>Win Rate</th>
+          <th style="min-width:120px">GameRadar Score</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td><span class="rank-badge rank-1">1</span></td>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+              
+            </div>
+          </td>
+          <td>
+            <span class="region-chip region-GL">
+              Global
+            </span>
+          </td>
+          <td><span class="tag-role">—</span></td>
+          <td class="metric-positive">0.00</td>
+          <td class="metric-positive">0.0%</td>
+          <td>
+            <div class="score-cell">
+              <span class="score-num" style="color:#38bdf8">0.00</span>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size:9px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td><span class="rank-badge rank-2">2</span></td>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+              
+            </div>
+          </td>
+          <td>
+            <span class="region-chip region-GL">
+              Global
+            </span>
+          </td>
+          <td><span class="tag-role">—</span></td>
+          <td class="metric-positive">0.00</td>
+          <td class="metric-positive">0.0%</td>
+          <td>
+            <div class="score-cell">
+              <span class="score-num" style="color:#38bdf8">0.00</span>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size:9px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td><span class="rank-badge rank-3">3</span></td>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+              
+            </div>
+          </td>
+          <td>
+            <span class="region-chip region-GL">
+              Global
+            </span>
+          </td>
+          <td><span class="tag-role">—</span></td>
+          <td class="metric-positive">0.00</td>
+          <td class="metric-positive">0.0%</td>
+          <td>
+            <div class="score-cell">
+              <span class="score-num" style="color:#38bdf8">0.00</span>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size:9px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td><span class="rank-badge rank-4">4</span></td>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+              
+            </div>
+          </td>
+          <td>
+            <span class="region-chip region-GL">
+              Global
+            </span>
+          </td>
+          <td><span class="tag-role">—</span></td>
+          <td class="metric-positive">0.00</td>
+          <td class="metric-positive">0.0%</td>
+          <td>
+            <div class="score-cell">
+              <span class="score-num" style="color:#38bdf8">0.00</span>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size:9px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td><span class="rank-badge rank-5">5</span></td>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+              
+            </div>
+          </td>
+          <td>
+            <span class="region-chip region-GL">
+              Global
+            </span>
+          </td>
+          <td><span class="tag-role">—</span></td>
+          <td class="metric-positive">0.00</td>
+          <td class="metric-positive">0.0%</td>
+          <td>
+            <div class="score-cell">
+              <span class="score-num" style="color:#38bdf8">0.00</span>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </td>
+          <td><span style="font-size:9px;color:#64748b"></span></td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RADAR CHARTS — top 2 players -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon">📡</span> Performance Radar — Top 2 Players
+    </div>
+    <div class="radar-row">
+      
+      <div class="radar-card">
+        <div class="radar-player-name"></div>
+        <div class="radar-player-sub"> · Global</div>
+
+        <!-- INLINE SVG RADAR CHART
+             Axes: KDA | Win Rate | Consistency | Games | Score
+             Values normalised 0→1 from player data -->
+        
+        
+        
+        
+        
+
+        <svg class="radar-svg" width="180" height="180" viewBox="0 0 180 180">
+          <defs>
+            <radialGradient id="radarFill1" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#38bdf8" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.08"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Grid rings (20% 40% 60% 80% 100%) -->
+          
+          <polygon
+            points="90.0000000244106,76.4 102.93436862312275,85.79736888114388 97.99387944302678,101.00263111489038 82.00612059647038,101.00263114358674 77.06563136179068,85.79736892757559 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000004882118,62.8 115.8687372462455,81.59473776228776 105.98775888605357,112.00526222978075 74.01224119294076,112.0052622871735 64.13126272358136,81.59473785515118 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000007323177,49.2 128.80310586936824,77.39210664343166 113.98163832908035,123.00789334467112 66.01836178941114,123.00789343076023 51.196894085372044,77.39210678272677 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000009764237,35.599999999999994 141.737474492491,73.18947552457554 121.97551777210714,134.0105244595615 58.02448238588153,134.010524574347 38.26252544716271,73.18947571030236 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000012205297,22.0 154.67184311561374,68.98684440571942 129.96939721513394,145.01315557445187 50.03060298235191,145.01315571793373 25.328156808953395,68.98684463787794 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="1.2"
+          />
+          
+
+          <!-- Axis lines -->
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="90.00000012205297" y2="22.0"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="154.67184311561374" y2="68.98684440571942"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="129.96939721513394" y2="145.01315557445187"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="50.03060298235191" y2="145.01315571793373"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="25.328156808953395" y2="68.98684463787794"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+
+          <!-- Data polygon -->
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <polygon
+            points="90.0,90.0 90.0,90.0 90.0,90.0 90.0,90.0 90.0,90.0 "
+            fill="url(#radarFill1)"
+            stroke="#38bdf8"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+
+          <!-- Data dots -->
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+
+          <!-- Axis labels -->
+          
+          
+          
+          
+          
+          <text
+            x="90.00000014359172" y="10.0"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >KDA</text>
+          
+          
+          
+          
+          
+          <text
+            x="166.08452131248674" y="65.27864047731697"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Win Rate</text>
+          
+          
+          
+          
+          
+          <text
+            x="137.02282025309873" y="154.72135949935515"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Consistency</text>
+          
+          
+          
+          
+          
+          <text
+            x="42.97717997923754" y="154.72135966815733"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Activity</text>
+          
+          
+          
+          
+          
+          <text
+            x="13.9154785987687" y="65.27864075044464"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Score</text>
+          
+
+          <!-- Center score label -->
+          <text x="90" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#38bdf8" font-family="'Segoe UI', sans-serif">0.0</text>
+          <text x="90" y="101" text-anchor="middle" font-size="7" fill="#64748b" font-family="'Segoe UI', sans-serif">/ 10</text>
+        </svg>
+
+        <div class="radar-legend">
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>KDA: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Win Rate: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Consistency: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Activity: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Score: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+        </div>
+      </div>
+      
+      <div class="radar-card">
+        <div class="radar-player-name"></div>
+        <div class="radar-player-sub"> · Global</div>
+
+        <!-- INLINE SVG RADAR CHART
+             Axes: KDA | Win Rate | Consistency | Games | Score
+             Values normalised 0→1 from player data -->
+        
+        
+        
+        
+        
+
+        <svg class="radar-svg" width="180" height="180" viewBox="0 0 180 180">
+          <defs>
+            <radialGradient id="radarFill2" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#38bdf8" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.08"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Grid rings (20% 40% 60% 80% 100%) -->
+          
+          <polygon
+            points="90.0000000244106,76.4 102.93436862312275,85.79736888114388 97.99387944302678,101.00263111489038 82.00612059647038,101.00263114358674 77.06563136179068,85.79736892757559 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000004882118,62.8 115.8687372462455,81.59473776228776 105.98775888605357,112.00526222978075 74.01224119294076,112.0052622871735 64.13126272358136,81.59473785515118 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000007323177,49.2 128.80310586936824,77.39210664343166 113.98163832908035,123.00789334467112 66.01836178941114,123.00789343076023 51.196894085372044,77.39210678272677 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000009764237,35.599999999999994 141.737474492491,73.18947552457554 121.97551777210714,134.0105244595615 58.02448238588153,134.010524574347 38.26252544716271,73.18947571030236 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="0.7"
+          />
+          
+          <polygon
+            points="90.00000012205297,22.0 154.67184311561374,68.98684440571942 129.96939721513394,145.01315557445187 50.03060298235191,145.01315571793373 25.328156808953395,68.98684463787794 "
+            fill="none"
+            stroke="#334155"
+            stroke-width="1.2"
+          />
+          
+
+          <!-- Axis lines -->
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="90.00000012205297" y2="22.0"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="154.67184311561374" y2="68.98684440571942"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="129.96939721513394" y2="145.01315557445187"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="50.03060298235191" y2="145.01315571793373"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+          
+          <line
+            x1="90" y1="90"
+            x2="25.328156808953395" y2="68.98684463787794"
+            stroke="#334155" stroke-width="0.8"
+          />
+          
+
+          <!-- Data polygon -->
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          <polygon
+            points="90.0,90.0 90.0,90.0 90.0,90.0 90.0,90.0 90.0,90.0 "
+            fill="url(#radarFill2)"
+            stroke="#38bdf8"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+
+          <!-- Data dots -->
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+          
+          
+          <circle
+            cx="90.0"
+            cy="90.0"
+            r="3.5"
+            fill="#38bdf8"
+            stroke="#0f172a"
+            stroke-width="1.5"
+          />
+          
+
+          <!-- Axis labels -->
+          
+          
+          
+          
+          
+          <text
+            x="90.00000014359172" y="10.0"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >KDA</text>
+          
+          
+          
+          
+          
+          <text
+            x="166.08452131248674" y="65.27864047731697"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Win Rate</text>
+          
+          
+          
+          
+          
+          <text
+            x="137.02282025309873" y="154.72135949935515"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Consistency</text>
+          
+          
+          
+          
+          
+          <text
+            x="42.97717997923754" y="154.72135966815733"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Activity</text>
+          
+          
+          
+          
+          
+          <text
+            x="13.9154785987687" y="65.27864075044464"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            font-size="7"
+            fill="#94a3b8"
+            font-family="'Segoe UI', sans-serif"
+          >Score</text>
+          
+
+          <!-- Center score label -->
+          <text x="90" y="86" text-anchor="middle" font-size="14" font-weight="700" fill="#38bdf8" font-family="'Segoe UI', sans-serif">0.0</text>
+          <text x="90" y="101" text-anchor="middle" font-size="7" fill="#64748b" font-family="'Segoe UI', sans-serif">/ 10</text>
+        </svg>
+
+        <div class="radar-legend">
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>KDA: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Win Rate: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Consistency: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Activity: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+          <div class="legend-item">
+            <div class="legend-dot"></div>
+            <span>Score: <strong style="color:#f1f5f9">0%</strong></span>
+          </div>
+          
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- SCORE FORMULA -->
+  <div class="formula-block">
+    <div class="formula-title">GameRadar Score Formula</div>
+    <div class="formula-eq">
+      Score =
+      (<span class="w-kda">KDA<sub>norm</sub> × 0.30</span>) +
+      (<span class="w-wr">WinRate<sub>norm</sub> × 0.40</span>) +
+      (<span class="w-cons">Consistency<sub>norm</sub> × 0.30</span>)
+    </div>
+    <div class="formula-note">
+      All metrics normalised to [0, 10] before weighting. Final score range: 0 – 10.
+      KDA capped at 15 to prevent outlier saturation.
+    </div>
+  </div>
+
+  <!-- PAGE FOOTER -->
+  <div class="page-footer">
+    <div class="footer-left">Generated 2026-04-17 23:01 UTC</div>
+    <div class="footer-center">GameRadar AI — Confidential</div>
+    <div class="footer-right">Page 1 of 2</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PAGE 2 — GLOSSARY + FULL TABLE + SOURCES
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="watermark">CONFIDENTIAL</div>
+
+  <!-- Repeat compact header -->
+  <header class="header" style="margin-bottom:22px">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="13" cy="13" r="11" stroke="#38bdf8" stroke-width="1.5" opacity=".4"/>
+          <circle cx="13" cy="13" r="3"  fill="#38bdf8"/>
+          <line x1="13" y1="2"  x2="13" y2="6"  stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="13" y1="20" x2="13" y2="24" stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="2"  y1="13" x2="6"  y2="13" stroke="#38bdf8" stroke-width="1.2"/>
+          <line x1="20" y1="13" x2="24" y2="13" stroke="#38bdf8" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="brand">GameRadar AI</div>
+        <div class="sub">Asian Esports Intelligence Platform</div>
+      </div>
+    </div>
+    <div class="report-meta">
+      <div class="report-title">Glossary of Translated Terms</div>
+      <div class="report-period">April 2026 · Rookie Plan</div>
+    </div>
+  </header>
+
+  <!-- GLOSSARY -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon">📖</span> Role &amp; Term Glossary — Asian Languages → English
+    </div>
+    <div class="glossary-grid">
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Mid Laner
+          <span class="glossary-original">中单 (Zhōng dān) / 미드 라이너</span>
+        </div>
+        <div class="glossary-def">Player controlling the central lane. Requires high KDA and map pressure. Dominant position in LPL and LCK.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          ADC / Marksman
+          <span class="glossary-original">射手 (Shèshǒu) / 원거리 딜러</span>
+        </div>
+        <div class="glossary-def">Attack Damage Carry. Primary ranged DPS in bot lane. Win Rate is the most predictive metric for ADC performance.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Jungler
+          <span class="glossary-original">打野 (Dǎ yě) / 정글러</span>
+        </div>
+        <div class="glossary-def">Neutral objectives specialist. Consistency Index reflects objective control over a season.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Support
+          <span class="glossary-original">辅助 (Fǔzhù) / 서포터</span>
+        </div>
+        <div class="glossary-def">Vision and peel specialist. High Games_Analyzed indicates tournament regularity and professional experience.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Top Laner
+          <span class="glossary-original">上单 (Shàng dān) / 탑 라이너</span>
+        </div>
+        <div class="glossary-def">Isolated solo laner. Valued for split-push and carry potential in Asian meta.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Challenger
+          <span class="glossary-original">挑战者 / 챌린저 / チャレンジャー</span>
+        </div>
+        <div class="glossary-def">Highest ladder rank in all servers. Prerequisite tier for professional team tryouts in Korea and China.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          KDA Ratio
+          <span class="glossary-original">击杀死亡助攻 / 킬뎃어시</span>
+        </div>
+        <div class="glossary-def">(Kills + Assists) ÷ Deaths. Capped at 15 for normalisation. Score weight: 30%.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          GameRadar Score
+          <span class="glossary-original">综合评分 / 종합 점수</span>
+        </div>
+        <div class="glossary-def">Proprietary index [0–10]. Formula: (KDA×0.3)+(WinRate×0.4)+(Consistency×0.3). Source-agnostic and cross-region comparable.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          LPL
+          <span class="glossary-original">英雄联盟职业联赛</span>
+        </div>
+        <div class="glossary-def">League of Legends Pro League — China&#39;s top-tier LoL competition. Players sourced from Wanplus and PentaQ.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          LCK
+          <span class="glossary-original">리그 오브 레전드 챔피언스 코리아</span>
+        </div>
+        <div class="glossary-def">League of Legends Champions Korea. Data sourced from Dak.gg and OP.GG KR.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Consistency Index
+          <span class="glossary-original">稳定性指数 / 일관성 지수</span>
+        </div>
+        <div class="glossary-def">Derived metric [0–100] based on consistency_score, games_analyzed, or tournament_participations. Score weight: 30%.</div>
+      </div>
+      
+      <div class="glossary-item">
+        <div class="glossary-term">
+          Smurf Account
+          <span class="glossary-original">小号 (Xiǎo hào) / 스머프</span>
+        </div>
+        <div class="glossary-def">Secondary account used by professional players. Detected via abnormal KDA+WinRate outliers in ladder data.</div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- ALL PLAYERS TABLE -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon">📊</span> Full Player Dataset — April 2026
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Region</th>
+          <th>Game</th>
+          <th>KDA</th>
+          <th>Win%</th>
+          <th>Consist.</th>
+          <th>Score</th>
+          <th>Source</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+        <tr>
+          <td>
+            <div class="player-cell">
+              <span class="player-nick"></span>
+              
+            </div>
+          </td>
+          <td><span class="region-chip region-GL">Global</span></td>
+          <td><span style="font-size:9px;color:#94a3b8">LOL</span></td>
+          <td class="metric-positive">0.00</td>
+          <td>0.0%</td>
+          <td>0.0</td>
+          <td style="font-weight:700;color:#38bdf8">0.00</td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+          <td><span style="font-size:8.5px;color:#64748b"></span></td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DATA SOURCES STRIP -->
+  <div class="sources-strip">
+    <span class="sources-label">Data Sources:</span>
+    
+  </div>
+
+  <!-- PAGE FOOTER -->
+  <div class="page-footer">
+    <div class="footer-left">Generated 2026-04-17 23:01 UTC · GameRadar AI v1.0</div>
+    <div class="footer-center">🔒 For authorized subscribers only</div>
+    <div class="footer-right">Page 2 of 2</div>
+  </div>
+</div>
+
+</body>
+</html>
