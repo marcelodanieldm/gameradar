@@ -1,14 +1,19 @@
 """
-Bronze Ingestion — Wanplus + Dak.gg + The Esports Club India
-=============================================================
+Bronze Ingestion — Asia Full Pipeline
+======================================
 
 Script diseñado para ejecutarse en GitHub Actions cada 12 horas.
-Extrae datos de las tres fuentes, los sanitiza y los guarda en
-/bronze/<source>/<YYYY-MM-DD>.json con rotación de headers integrada.
+Cubre las 11 fuentes del ecosistema asiático de e-sports:
+
+  Corea/Japón : Dak.gg (Playwright), OP.GG (API), ZETA Division,
+                DetonatioN, Game-i.daa.jp
+  China       : Wanplus (API), PentaQ
+  India/SEA   : The Esports Club, VRL Vyper, GosuGamers SEA
+  Global      : Liquipedia (API backup)
 
 Uso:
     python ingest_bronze_targets.py
-    python ingest_bronze_targets.py --sources wanplus tec_india
+    python ingest_bronze_targets.py --sources opgg_kr pentaq liquipedia
     python ingest_bronze_targets.py --dry-run
 
 Variables de entorno (opcionales — el script funciona sin ellas):
@@ -29,10 +34,20 @@ import httpx
 from loguru import logger
 from playwright.async_api import async_playwright, Browser, Page
 
-# ──────────────────────────────────────────────
-# Importamos AdvancedHeaderRotator del proyecto
-# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────
+# Imports del proyecto
+# ──────────────────────────────────────────────────────────────
 from StrategicAdapters import AdvancedHeaderRotator, RegionProfile, ExponentialBackoffHandler
+from AsiaAdapters import (
+    OPGGAdapter,
+    ZetaDivisionAdapter,
+    DetonatioNAdapter,
+    GameiJapanAdapter,
+    PentaQAdapter,
+    VRLVyperAdapter,
+    GosuGamersSEAAdapter,
+    LiquipediaAdapter,
+)
 
 # ──────────────────────────────────────────────
 # Constantes
@@ -63,6 +78,63 @@ TEC_INDIA_TARGETS = [
     {"id": "Clutch",     "game": "lol"},
     {"id": "Awoken",     "game": "lol"},
     {"id": "KingXtreme", "game": "lol"},
+]
+
+OPGG_KR_TARGETS = [
+    {"id": "Faker",      "game": "lol"},
+    {"id": "Chovy",      "game": "lol"},
+    {"id": "ShowMaker",  "game": "lol"},
+    {"id": "Keria",      "game": "lol"},
+    {"id": "Ruler",      "game": "lol"},
+]
+
+OPGG_JP_TARGETS = [
+    {"id": "Evi",        "game": "lol"},
+    {"id": "Yutapon",   "game": "lol"},
+    {"id": "Steal",      "game": "lol"},
+]
+
+ZETA_TARGETS = [
+    {"id": "TENNN",     "game": "valorant"},
+    {"id": "Laz",       "game": "valorant"},
+    {"id": "dep",       "game": "valorant"},
+]
+
+DETONATION_TARGETS = [
+    {"id": "Evi",        "game": "lol"},
+    {"id": "Peace",      "game": "lol"},
+    {"id": "Harp",       "game": "lol"},
+]
+
+GAMEI_JAPAN_TARGETS = [
+    {"id": "Faker",      "game": "lol"},
+    {"id": "Laz",       "game": "valorant"},
+]
+
+PENTAQ_TARGETS = [
+    {"id": "JackeyLove", "game": "lol"},
+    {"id": "Knight",     "game": "lol"},
+    {"id": "Uzi",        "game": "lol"},
+]
+
+VRL_VYPER_TARGETS = [
+    {"id": "Shadow",     "game": "valorant"},
+    {"id": "Bazzi",      "game": "valorant"},
+    {"id": "K1nG",       "game": "valorant"},
+]
+
+GOSUGAMERS_TARGETS = [
+    {"id": "Whitemon",   "game": "dota2"},
+    {"id": "Miracle-",   "game": "dota2"},
+    {"id": "MSS",        "game": "dota2"},
+]
+
+LIQUIPEDIA_TARGETS = [
+    {"id": "Faker",      "game": "lol"},
+    {"id": "JackeyLove", "game": "lol"},
+    {"id": "Yutapon",   "game": "lol"},
+    {"id": "Shadow",     "game": "lol"},
+    {"id": "Whitemon",   "game": "dota2"},
 ]
 
 # ──────────────────────────────────────────────
@@ -431,8 +503,38 @@ async def scrape_tec_india(
 
 
 # ──────────────────────────────────────────────
-# Helpers
+# Scraper genérico para adapters httpx de AsiaAdapters
 # ──────────────────────────────────────────────
+
+async def scrape_via_adapter(
+    targets: List[Dict[str, str]],
+    adapter,
+    source_name: str,
+) -> List[Dict[str, Any]]:
+    """
+    Función genérica para adapters que implementan fetch_player().
+    Reutilizable para todos los adapters de AsiaAdapters.
+    """
+    results: List[Dict[str, Any]] = []
+    for target in targets:
+        player_id = target["id"]
+        game      = target.get("game", "lol")
+        try:
+            raw = await adapter.fetch_player(player_id, game=game)
+            if raw:
+                results.append(sanitize_record(raw, source_name))
+                logger.info(f"  ✅ {source_name} — {player_id}")
+            else:
+                logger.warning(f"  ⚠️  {source_name} — {player_id}: sin datos")
+                results.append(sanitize_record(
+                    _skeleton(player_id, "XX", "UNKNOWN", source_name), source_name
+                ))
+        except Exception as e:
+            logger.warning(f"  ⚠️  {source_name} error para {player_id}: {e}")
+            results.append(sanitize_record(
+                _skeleton(player_id, "XX", "UNKNOWN", source_name), source_name
+            ))
+    return results
 
 def _skeleton(player_id: str, country: str, server: str, source: str) -> Dict[str, Any]:
     """Registro mínimo cuando el scraper no obtiene datos."""
@@ -459,21 +561,21 @@ async def _safe_inner_text(page: Page, selector: str) -> Optional[str]:
     return None
 
 
-def _build_summary(
-    wanplus_records: List[Dict],
-    dakgg_records: List[Dict],
-    tec_records: List[Dict],
-) -> Dict[str, Any]:
+def _build_summary(source_results: Dict[str, List[Dict]]) -> Dict[str, Any]:
     """Genera resumen de la ejecución para logging."""
     def count_full(records: List[Dict]) -> int:
         return sum(1 for r in records if not r.get("_partial"))
 
+    breakdown = {
+        src: {"total": len(recs), "with_data": count_full(recs)}
+        for src, recs in source_results.items()
+    }
     return {
         "run_ts":    RUN_TS,
         "date":      TODAY,
-        "wanplus":  {"total": len(wanplus_records),  "with_data": count_full(wanplus_records)},
-        "dakgg":    {"total": len(dakgg_records),     "with_data": count_full(dakgg_records)},
-        "tec_india":{"total": len(tec_records),       "with_data": count_full(tec_records)},
+        "sources":   breakdown,
+        "total_records": sum(len(r) for r in source_results.values()),
+        "total_with_data": sum(v["with_data"] for v in breakdown.values()),
     }
 
 
@@ -481,37 +583,87 @@ def _build_summary(
 # Entry point
 # ──────────────────────────────────────────────
 
+ALL_SOURCES = [
+    "wanplus", "dakgg", "tec_india",
+    "opgg_kr", "opgg_jp",
+    "zeta_division", "detonation", "gamei_japan",
+    "pentaq",
+    "vrl_vyper", "gosugamers_sea",
+    "liquipedia",
+]
+
+
 async def main(sources: Optional[List[str]] = None, dry_run: bool = False) -> None:
-    sources = sources or ["wanplus", "dakgg", "tec_india"]
+    sources = sources or ALL_SOURCES
 
-    logger.info("=" * 60)
+    logger.info("=" * 70)
     logger.info(f"🚀  GameRadar Bronze Ingestion — {TODAY}")
-    logger.info(f"   Fuentes: {', '.join(sources)}")
+    logger.info(f"   Fuentes ({len(sources)}): {', '.join(sources)}")
     logger.info(f"   Dry-run: {dry_run}")
-    logger.info("=" * 60)
+    logger.info("=" * 70)
 
-    wanplus_records: List[Dict] = []
-    dakgg_records:   List[Dict] = []
-    tec_records:     List[Dict] = []
+    source_results: Dict[str, List[Dict]] = {}
 
     async with httpx.AsyncClient(
         timeout=30,
         limits=httpx.Limits(max_connections=5, max_keepalive_connections=3),
-        verify=False,       # algunos sitios usan certs auto-firmados
+        verify=False,
         http2=True,
     ) as http_client:
 
-        # ── Wanplus (httpx) ──────────────────────────────
         if "wanplus" in sources:
             logger.info("\n📡  Scraping Wanplus (China / LPL)…")
-            wanplus_records = await scrape_wanplus(WANPLUS_TARGETS, http_client)
+            source_results["wanplus"] = await scrape_wanplus(WANPLUS_TARGETS, http_client)
 
-        # ── TEC India (httpx) ────────────────────────────
         if "tec_india" in sources:
             logger.info("\n📡  Scraping The Esports Club (India)…")
-            tec_records = await scrape_tec_india(TEC_INDIA_TARGETS, http_client)
+            source_results["tec_india"] = await scrape_tec_india(TEC_INDIA_TARGETS, http_client)
 
-        # ── Dak.gg (Playwright) ──────────────────────────
+        if "opgg_kr" in sources:
+            logger.info("\n📡  Scraping OP.GG Korea…")
+            adapter = OPGGAdapter(client=http_client, region="kr")
+            source_results["opgg_kr"] = await scrape_via_adapter(OPGG_KR_TARGETS, adapter, "opgg_kr")
+
+        if "opgg_jp" in sources:
+            logger.info("\n📡  Scraping OP.GG Japan…")
+            adapter = OPGGAdapter(client=http_client, region="jp")
+            source_results["opgg_jp"] = await scrape_via_adapter(OPGG_JP_TARGETS, adapter, "opgg_jp")
+
+        if "zeta_division" in sources:
+            logger.info("\n📡  Scraping ZETA Division (Japan)…")
+            adapter = ZetaDivisionAdapter(client=http_client)
+            source_results["zeta_division"] = await scrape_via_adapter(ZETA_TARGETS, adapter, "zeta_division")
+
+        if "detonation" in sources:
+            logger.info("\n📡  Scraping DetonatioN FocusMe (Japan)…")
+            adapter = DetonatioNAdapter(client=http_client)
+            source_results["detonation"] = await scrape_via_adapter(DETONATION_TARGETS, adapter, "detonation")
+
+        if "gamei_japan" in sources:
+            logger.info("\n📡  Scraping Game-i.daa.jp (Japan rankings)…")
+            adapter = GameiJapanAdapter(client=http_client)
+            source_results["gamei_japan"] = await scrape_via_adapter(GAMEI_JAPAN_TARGETS, adapter, "gamei_japan")
+
+        if "pentaq" in sources:
+            logger.info("\n📡  Scraping PentaQ (China analysis)…")
+            adapter = PentaQAdapter(client=http_client)
+            source_results["pentaq"] = await scrape_via_adapter(PENTAQ_TARGETS, adapter, "pentaq")
+
+        if "vrl_vyper" in sources:
+            logger.info("\n📡  Scraping VRL Vyper (India / Valorant)…")
+            adapter = VRLVyperAdapter(client=http_client)
+            source_results["vrl_vyper"] = await scrape_via_adapter(VRL_VYPER_TARGETS, adapter, "vrl_vyper")
+
+        if "gosugamers_sea" in sources:
+            logger.info("\n📡  Scraping GosuGamers SEA (Dota2/ML)…")
+            adapter = GosuGamersSEAAdapter(client=http_client)
+            source_results["gosugamers_sea"] = await scrape_via_adapter(GOSUGAMERS_TARGETS, adapter, "gosugamers_sea")
+
+        if "liquipedia" in sources:
+            logger.info("\n📡  Scraping Liquipedia (global backup)…")
+            adapter = LiquipediaAdapter(client=http_client)
+            source_results["liquipedia"] = await scrape_via_adapter(LIQUIPEDIA_TARGETS, adapter, "liquipedia")
+
         if "dakgg" in sources:
             logger.info("\n📡  Scraping Dak.gg (Korea / Playwright)…")
             async with async_playwright() as pw:
@@ -525,41 +677,38 @@ async def main(sources: Optional[List[str]] = None, dry_run: bool = False) -> No
                         "--disable-gpu",
                     ],
                 )
-                dakgg_records = await scrape_dakgg(DAKGG_TARGETS, browser)
+                source_results["dakgg"] = await scrape_dakgg(DAKGG_TARGETS, browser)
                 await browser.close()
 
-    # ── Persistencia ─────────────────────────────────────
     if not dry_run:
-        if wanplus_records:
-            save_bronze(wanplus_records, "wanplus")
-        if dakgg_records:
-            save_bronze(dakgg_records, "dakgg")
-        if tec_records:
-            save_bronze(tec_records, "tec_india")
+        for src, records in source_results.items():
+            if records:
+                save_bronze(records, src)
     else:
         logger.info("\n[DRY-RUN] No se escribieron archivos.")
 
-    # ── Resumen ───────────────────────────────────────────
-    summary = _build_summary(wanplus_records, dakgg_records, tec_records)
+    summary = _build_summary(source_results)
     summary_path = BRONZE_DIR / "logs" / f"summary_{TODAY}.json"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    logger.info("\n" + "=" * 60)
-    logger.info("📊  RESUMEN")
-    logger.info(f"   Wanplus  : {summary['wanplus']['with_data']}/{summary['wanplus']['total']} con datos")
-    logger.info(f"   Dak.gg   : {summary['dakgg']['with_data']}/{summary['dakgg']['total']} con datos")
-    logger.info(f"   TEC India: {summary['tec_india']['with_data']}/{summary['tec_india']['total']} con datos")
-    logger.info("=" * 60)
+    logger.info("\n" + "=" * 70)
+    logger.info("📊  RESUMEN FINAL")
+    for src, info in summary["sources"].items():
+        icon = "✅" if info["with_data"] > 0 else "⚠️ "
+        logger.info(f"   {icon} {src:<20}: {info['with_data']}/{info['total']} con datos")
+    logger.info(f"   Total registros: {summary['total_records']}")
+    logger.info(f"   Con datos reales: {summary['total_with_data']}")
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GameRadar Bronze Ingestion")
     parser.add_argument(
         "--sources", nargs="+",
-        choices=["wanplus", "dakgg", "tec_india"],
-        default=["wanplus", "dakgg", "tec_india"],
-        help="Fuentes a scrapear",
+        choices=ALL_SOURCES,
+        default=ALL_SOURCES,
+        help="Fuentes a scrapear (por defecto: todas)",
     )
     parser.add_argument(
         "--dry-run", action="store_true",

@@ -1,4 +1,4 @@
-name: Bronze Ingestion — Wanplus, Dak.gg & TEC India
+name: Bronze Ingestion — Asia Full Pipeline (11 fuentes)
 
 # ──────────────────────────────────────────────────────────────
 # Ejecuta cada 12 horas y en cada push a main (ramas protegidas).
@@ -13,7 +13,7 @@ on:
       sources:
         description: 'Fuentes a scrapear (separadas por espacio)'
         required: false
-        default: 'wanplus dakgg tec_india'
+        default: 'wanplus dakgg tec_india opgg_kr opgg_jp zeta_division detonation gamei_japan pentaq vrl_vyper gosugamers_sea liquipedia'
       dry_run:
         description: 'Dry-run — ejecutar sin escribir archivos'
         required: false
@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   ingest:
-    name: Ingest Bronze — ${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}
+    name: Ingest Bronze — ${{ github.event.inputs.sources || 'all sources' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     # Evita ejecuciones concurrentes para el mismo grupo
@@ -63,7 +63,11 @@ jobs:
       # ── 5. Crear estructura de directorios ───────────────────
       - name: Prepare bronze directories
         run: |
-          mkdir -p bronze/wanplus bronze/dakgg bronze/tec_india bronze/logs
+          mkdir -p bronze/wanplus bronze/dakgg bronze/tec_india \
+                   bronze/opgg_kr bronze/opgg_jp \
+                   bronze/zeta_division bronze/detonation bronze/gamei_japan \
+                   bronze/pentaq bronze/vrl_vyper bronze/gosugamers_sea \
+                   bronze/liquipedia bronze/logs
 
       # ── 6. Ejecutar ingesta ───────────────────────────────────
       - name: Run bronze ingestion
@@ -72,7 +76,7 @@ jobs:
           SUPABASE_KEY:  ${{ secrets.SUPABASE_KEY }}
           PYTHONUNBUFFERED: "1"
         run: |
-          SOURCES="${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}"
+          SOURCES="${{ github.event.inputs.sources || 'wanplus dakgg tec_india opgg_kr opgg_jp zeta_division detonation gamei_japan pentaq vrl_vyper gosugamers_sea liquipedia' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
 
           ARGS="--sources ${SOURCES}"
@@ -102,7 +106,7 @@ jobs:
             DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
             git commit -m "data(bronze): ingesta automática ${DATE}
 
-            Fuentes: ${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}
+            Fuentes: ${{ github.event.inputs.sources || 'all (11 fuentes Asia)' }}
             Trigger: ${{ github.event_name }}
             Run: ${{ github.run_number }}"
 

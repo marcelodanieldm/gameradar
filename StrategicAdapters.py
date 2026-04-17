@@ -979,14 +979,24 @@ class StrategicAdapterFactory:
     """Factory para registrar y obtener adapters estratégicos"""
     
     _adapters: Dict[str, type] = {
-        "wanplus": WanplusAdapter,
-        "tec_india": TheEsportsClubAdapter,
-        "soha_game": SohaGameAdapter,
+        # Adapters originales
+        "wanplus":       WanplusAdapter,
+        "tec_india":     TheEsportsClubAdapter,
+        "soha_game":     SohaGameAdapter,
         "steam_web_api": SteamWebAPIAdapter,
-        "loot_bet": LootBetAdapter,
-        "riot_api_kr": RiotGamesShardAdapter,
-        "riot_api_jp": RiotGamesShardAdapter,
+        "loot_bet":      LootBetAdapter,
+        "riot_api_kr":   RiotGamesShardAdapter,
+        "riot_api_jp":   RiotGamesShardAdapter,
     }
+
+    @classmethod
+    def _get_all_adapters(cls) -> Dict[str, type]:
+        """Devuelve adapters base + los registrados desde AsiaAdapters."""
+        try:
+            from AsiaAdapters import ASIA_ADAPTERS
+            return {**cls._adapters, **ASIA_ADAPTERS}
+        except ImportError:
+            return cls._adapters
     
     @classmethod
     def create_adapter(
@@ -995,33 +1005,41 @@ class StrategicAdapterFactory:
         client: httpx.AsyncClient,
         **kwargs
     ) -> Optional[BaseStrategicAdapter]:
-        """Crear instancia de adapter"""
-        adapter_class = cls._adapters.get(source)
-        
+        """Crear instancia de adapter (incluye AsiaAdapters automáticamente)."""
+        all_adapters = cls._get_all_adapters()
+        adapter_class = all_adapters.get(source)
+
         if not adapter_class:
             logger.error(f"❌ Adapter '{source}' not found")
             return None
-        
+
+        # Merge kwargs especiales definidos en AsiaAdapters
+        try:
+            from AsiaAdapters import ASIA_ADAPTER_KWARGS
+            extra = ASIA_ADAPTER_KWARGS.get(source, {})
+            kwargs = {**extra, **kwargs}
+        except ImportError:
+            pass
+
         return adapter_class(client=client, **kwargs)
     
     @classmethod
     def get_all_sources(cls) -> List[str]:
-        """Listar todos los adapters disponibles"""
-        return list(cls._adapters.keys())
-    
+        """Listar todos los adapters disponibles (base + Asia)."""
+        return list(cls._get_all_adapters().keys())
+
     @classmethod
     def get_sources_by_region(cls, region: RegionProfile) -> List[str]:
-        """Obtener fuentes por región"""
+        """Obtener fuentes por región (incluye AsiaAdapters)."""
         region_mapping = {
-            RegionProfile.CHINA: ["wanplus"],
-            RegionProfile.KOREA: ["riot_api_kr"],
-            RegionProfile.JAPAN: ["riot_api_jp"],
-            RegionProfile.INDIA: ["tec_india"],
+            RegionProfile.CHINA:   ["wanplus",     "pentaq"],
+            RegionProfile.KOREA:   ["riot_api_kr", "opgg_kr"],
+            RegionProfile.JAPAN:   ["riot_api_jp", "opgg_jp", "zeta_division", "detonation", "gamei_japan"],
+            RegionProfile.INDIA:   ["tec_india",   "vrl_vyper"],
             RegionProfile.VIETNAM: ["soha_game"],
-            RegionProfile.SEA: ["steam_web_api"],
-            RegionProfile.GLOBAL: ["loot_bet"],
+            RegionProfile.SEA:     ["steam_web_api", "gosugamers_sea"],
+            RegionProfile.GLOBAL:  ["loot_bet",    "liquipedia"],
         }
-        
         return region_mapping.get(region, [])
 
 
