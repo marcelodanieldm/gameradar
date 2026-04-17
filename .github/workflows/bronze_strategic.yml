@@ -1,0 +1,122 @@
+name: Bronze Ingestion — Wanplus, Dak.gg & TEC India
+
+# ──────────────────────────────────────────────────────────────
+# Ejecuta cada 12 horas y en cada push a main (ramas protegidas).
+# También admite disparo manual con parámetros opcionales.
+# ──────────────────────────────────────────────────────────────
+on:
+  schedule:
+    - cron: '0 */12 * * *'   # 00:00 y 12:00 UTC diariamente
+
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Fuentes a scrapear (separadas por espacio)'
+        required: false
+        default: 'wanplus dakgg tec_india'
+      dry_run:
+        description: 'Dry-run — ejecutar sin escribir archivos'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+permissions:
+  contents: write   # necesario para hacer commit de /bronze
+
+jobs:
+  ingest:
+    name: Ingest Bronze — ${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Evita ejecuciones concurrentes para el mismo grupo
+    concurrency:
+      group: bronze-ingest
+      cancel-in-progress: false
+
+    steps:
+      # ── 1. Checkout con token para poder hacer push ──────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      # ── 2. Python 3.11 ────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. Dependencias Python ────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── 4. Playwright + Chromium ──────────────────────────────
+      - name: Install Playwright browsers
+        run: |
+          playwright install chromium --with-deps
+
+      # ── 5. Crear estructura de directorios ───────────────────
+      - name: Prepare bronze directories
+        run: |
+          mkdir -p bronze/wanplus bronze/dakgg bronze/tec_india bronze/logs
+
+      # ── 6. Ejecutar ingesta ───────────────────────────────────
+      - name: Run bronze ingestion
+        env:
+          SUPABASE_URL:  ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY:  ${{ secrets.SUPABASE_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          SOURCES="${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+
+          ARGS="--sources ${SOURCES}"
+          if [ "${DRY_RUN}" = "true" ]; then
+            ARGS="${ARGS} --dry-run"
+          fi
+
+          echo "▶  Ejecutando: python ingest_bronze_targets.py ${ARGS}"
+          python ingest_bronze_targets.py ${ARGS}
+        # El paso NO falla el workflow si el scraper devuelve exit 1 parcial;
+        # los errores individuales se logean y el resto continúa.
+        continue-on-error: false
+
+      # ── 7. Commit y push de los JSONs generados ──────────────
+      - name: Commit bronze data to repository
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add bronze/
+
+          # Solo hace commit si hay cambios reales
+          if git diff --cached --quiet; then
+            echo "ℹ️  Sin cambios nuevos en /bronze — nada que commitear."
+          else
+            DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
+            git commit -m "data(bronze): ingesta automática ${DATE}
+
+            Fuentes: ${{ github.event.inputs.sources || 'wanplus dakgg tec_india' }}
+            Trigger: ${{ github.event_name }}
+            Run: ${{ github.run_number }}"
+
+            git push
+            echo "✅  Bronze data commitada correctamente."
+          fi
+
+      # ── 8. Subir artefactos en caso de error ─────────────────
+      - name: Upload logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bronze-logs-${{ github.run_number }}
+          path: |
+            bronze/logs/
+          retention-days: 7
+          if-no-files-found: ignore
