@@ -1,7 +1,68 @@
 ﻿# GameRadar AI — Commands Reference
 
-> **Last updated:** April 2026 · HEAD `95078a3`  
+> **Last updated:** April 2026 · HEAD `96b7275`  
 > All commands assume venv is activated or use the explicit `.venv\Scripts\python.exe` prefix.
+
+---
+
+## ⚡ CEO Weekly Operations — Monday Runbook
+
+> **Run every Monday morning before 08:00 UTC.**  
+> Order is mandatory: subscribers must be synced before delivery runs.
+
+```powershell
+# Step 1 — Pull new Stripe subscribers into subscribers.csv
+.venv\Scripts\python.exe subscriber_sync.py
+
+# Step 2 — Send weekly scouting reports to all subscribers
+.venv\Scripts\python.exe delivery.py
+```
+
+### Preview before committing (dry-run mode)
+```powershell
+# See what Stripe subscribers would be added — no file changes
+.venv\Scripts\python.exe subscriber_sync.py --dry-run
+
+# Validate all subscriber→report mappings — no emails sent
+.venv\Scripts\python.exe delivery.py --dry-run
+```
+
+### Sync only payments since a specific date
+```powershell
+.venv\Scripts\python.exe subscriber_sync.py --since 2026-04-14
+```
+
+### Deliver to a single region only
+```powershell
+.venv\Scripts\python.exe delivery.py --region "India"
+.venv\Scripts\python.exe delivery.py --region "Korea LCK"
+```
+
+### Region → Report PDF mapping
+
+| Subscriber region (Stripe) | region_plan in CSV | Report PDF generated |
+|----------------------------|--------------------|----------------------|
+| india                      | India              | india_report.pdf     |
+| korea                      | Korea LCK          | korea_lck_report.pdf |
+| vietnam                    | Vietnam VCS        | vietnam_vcs_report.pdf |
+| thailand                   | Thailand           | thailand_report.pdf  |
+| china                      | China LPL          | china_lpl_report.pdf |
+| sea                        | Asia Pacific       | asia_pacific_report.pdf |
+| japan                      | Japan LJL          | japan_ljl_report.pdf |
+
+### Environment variables required
+```powershell
+# In .env file or exported before running:
+$env:STRIPE_SECRET_KEY = "sk_live_..."   # from Stripe Dashboard → Developers → API keys
+$env:SMTP_USER         = "you@gmail.com"
+$env:SMTP_PASSWORD     = "your-app-password"
+```
+
+### Sync log
+Each run appends a row to `reports/subscriber_sync_log.csv` — review anytime:
+```powershell
+Get-Content reports\subscriber_sync_log.csv
+```
 
 ---
 
