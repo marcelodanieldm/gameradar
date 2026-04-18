@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Subscription — GameRadar AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gentle-pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.6; }
+        }
+        .fade-up-1 { animation: fade-up 0.45s ease both 0.1s; opacity: 0; }
+        .fade-up-2 { animation: fade-up 0.45s ease both 0.25s; opacity: 0; }
+        .fade-up-3 { animation: fade-up 0.45s ease both 0.4s; opacity: 0; }
+        .fade-up-4 { animation: fade-up 0.45s ease both 0.55s; opacity: 0; }
+        .fade-up-5 { animation: fade-up 0.45s ease both 0.7s; opacity: 0; }
+
+        /* Subtle warning banner glow */
+        .retention-banner {
+            background: linear-gradient(135deg,
+                rgba(251,191,36,0.06) 0%,
+                rgba(249,115,22,0.05) 100%
+            );
+            border: 1px solid rgba(251,191,36,0.18);
+        }
+
+        /* Stripe portal button */
+        .btn-manage {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            transition: filter 0.2s ease, transform 0.15s ease;
+        }
+        .btn-manage:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+        }
+        .btn-manage:active {
+            transform: translateY(0);
+        }
+
+        /* Radar icon ambient glow */
+        .icon-radar {
+            animation: gentle-pulse 3s ease-in-out infinite;
+        }
+
+        /* Custom select styling */
+        select {
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 min-h-screen text-white flex flex-col items-center justify-center px-4 py-16">
+
+    <!-- Background ambient glow (neutral — not alarming) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2
+                    w-[500px] h-[500px] bg-violet-500/4 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-1/4
+                    w-[300px] h-[300px] bg-blue-500/3 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative max-w-md w-full">
+
+        <!-- Logo / nav back -->
+        <div class="text-center mb-10 fade-up-1">
+            <a href="landing.html"
+               class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-300 transition text-sm group">
+                <svg class="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+                Back to GameRadar<span class="text-blue-400 font-bold ml-0.5">AI</span>
+            </a>
+        </div>
+
+        <!-- Radar icon -->
+        <div class="flex justify-center mb-6 fade-up-1">
+            <div class="icon-radar w-16 h-16 rounded-full bg-slate-900 border border-slate-800
+                        flex items-center justify-center">
+                <svg viewBox="0 0 32 32" fill="none" class="w-9 h-9"
+                     xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="16" cy="16" r="13" stroke="#475569"
+                            stroke-width="0.8" fill="none" stroke-dasharray="3 2" opacity="0.5"/>
+                    <circle cx="16" cy="16" r="8.5" stroke="#475569"
+                            stroke-width="1.1" fill="none"/>
+                    <circle cx="16" cy="16" r="2.8"
+                            fill="rgba(100,116,139,0.3)" stroke="#475569" stroke-width="1.4"/>
+                    <line x1="16" y1="16" x2="28.5" y2="7.5"
+                          stroke="#64748b" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+                    <!-- Blip — grey, not lit -->
+                    <circle cx="24" cy="9" r="1.8" fill="#475569" opacity="0.6"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Heading -->
+        <div class="text-center mb-8 fade-up-2">
+            <h1 class="text-2xl font-bold text-white mb-2">Manage your subscription</h1>
+            <p class="text-slate-400 text-sm leading-relaxed">
+                You're in control. Update your plan, payment method,<br class="hidden sm:inline" />
+                or cancel at any time — no friction, no dark patterns.
+            </p>
+        </div>
+
+        <!-- ── Retention message ────────────────────────────────────────────── -->
+        <!--
+            Not a dark pattern — it's honest context about what the user loses.
+            One sentence. No countdown timers, no fake urgency, no guilt-tripping.
+        -->
+        <div class="retention-banner rounded-2xl p-5 mb-6 fade-up-3" role="note"
+             aria-label="What you'll lose access to">
+            <div class="flex gap-4 items-start">
+                <!-- Amber icon -->
+                <div class="flex-shrink-0 mt-0.5">
+                    <div class="w-8 h-8 bg-amber-500/10 border border-amber-500/25 rounded-lg
+                                flex items-center justify-center">
+                        <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-amber-200 text-sm font-semibold mb-1">Wait — are you sure?</p>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        You will lose access to the
+                        <strong class="text-white">Global GameRadar Rank</strong>
+                        and real-time scouting alerts for
+                        <strong id="display-region" class="text-cyan-400">your region</strong>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── What you currently receive ──────────────────────────────────── -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6 fade-up-3">
+            <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-4">
+                Your active Rookie Plan includes
+            </p>
+            <ul class="space-y-3 text-sm" role="list">
+                <li class="flex items-center gap-3">
+                    <span class="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30
+                                 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </span>
+                    <span class="text-slate-300">Weekly scouting report — every Monday</span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30
+                                 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </span>
+                    <span class="text-slate-300">Top 10 rising players in
+                        <span id="display-region-inline" class="text-cyan-400 font-medium">your region</span>
+                    </span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30
+                                 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </span>
+                    <span class="text-slate-300">Global GameRadar Rank access</span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/30
+                                 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </span>
+                    <span class="text-slate-300">Delivered straight to your inbox — no login needed</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ── Exit survey (optional) ───────────────────────────────────────── -->
+        <div class="fade-up-4">
+            <label for="exit-reason"
+                   class="block text-slate-500 text-xs uppercase tracking-wider font-semibold mb-2">
+                Help us improve
+                <span class="text-slate-700 font-normal normal-case tracking-normal ml-1">(optional)</span>
+            </label>
+            <select id="exit-reason"
+                    class="w-full bg-slate-900 border border-slate-800 text-slate-300
+                           rounded-xl px-4 py-3 text-sm focus:outline-none
+                           focus:ring-1 focus:ring-slate-600 pr-10 mb-6"
+                    aria-label="Reason for managing subscription">
+                <option value="" selected disabled>Why are you considering cancelling?</option>
+                <option value="too_expensive">Too expensive</option>
+                <option value="missing_features">Missing features</option>
+                <option value="no_longer_scouting">No longer scouting</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <!-- ── Primary CTA — Stripe Customer Portal ────────────────────────── -->
+        <div class="fade-up-5 space-y-3">
+            <button id="btn-manage-sub"
+                    onclick="openStripePortal()"
+                    class="btn-manage w-full text-white px-6 py-4 rounded-xl
+                           font-semibold text-sm flex items-center justify-center gap-2.5">
+                <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10"/>
+                </svg>
+                Manage Subscription
+            </button>
+
+            <!-- Secondary — go back, no pressure -->
+            <a href="landing.html"
+               class="block w-full text-center text-slate-500 hover:text-slate-300
+                      text-sm py-3 transition rounded-xl hover:bg-slate-900">
+                ← Keep my subscription
+            </a>
+        </div>
+
+        <!-- ── Footer note ──────────────────────────────────────────────────── -->
+        <p class="text-slate-700 text-xs text-center mt-10 leading-relaxed fade-up-5">
+            The Stripe Customer Portal lets you update payment info,<br />
+            pause, downgrade, or cancel — no email needed.
+            <br class="mb-1" />
+            Questions?
+            <a href="mailto:hello@gameradar.ai"
+               class="text-slate-600 hover:text-slate-400 transition underline underline-offset-2">
+                hello@gameradar.ai
+            </a>
+        </p>
+
+    </div><!-- /max-w-md -->
+
+    <script>
+        // ─────────────────────────────────────────────────────────────────────
+        //  Configuration
+        //  Replace STRIPE_PORTAL_URL with your Stripe Customer Portal link.
+        //
+        //  To find it:
+        //    Stripe Dashboard → Settings → Customer portal → Copy link
+        //    It looks like: https://billing.stripe.com/p/login/YOUR_ID
+        //
+        //  To pre-fill the customer's email, append: ?prefilled_email=…
+        // ─────────────────────────────────────────────────────────────────────
+        var STRIPE_PORTAL_URL = 'https://billing.stripe.com/p/login/YOUR_PORTAL_ID';
+
+        var REGION_LABELS = {
+            india:    '🇮🇳 India',
+            korea:    '🇰🇷 Korea LCK',
+            vietnam:  '🇻🇳 Vietnam VCS',
+            thailand: '🇹🇭 Thailand',
+            china:    '🇨🇳 China LPL',
+            sea:      '🌏 Southeast Asia',
+            japan:    '🇯🇵 Japan LJL',
+            global:   '🌐 Global',
+        };
+
+        // ── Populate region from URL param or localStorage ────────────────────
+        // Priority: ?region= URL parameter → localStorage gr_rookie_region
+        // This lets the unsubscribe link in the email include: ?region=india
+        function getRegion() {
+            var params = new URLSearchParams(window.location.search);
+            var fromUrl = (params.get('region') || '').trim().toLowerCase();
+            if (fromUrl) return fromUrl;
+            return (localStorage.getItem('gr_rookie_region') || '').trim().toLowerCase();
+        }
+
+        function getEmail() {
+            var params = new URLSearchParams(window.location.search);
+            var fromUrl = (params.get('email') || '').trim().toLowerCase();
+            if (fromUrl) return fromUrl;
+            return (localStorage.getItem('gr_rookie_email') || '').trim().toLowerCase();
+        }
+
+        var region = getRegion();
+        var email  = getEmail();
+        var label  = (region && REGION_LABELS[region]) ? REGION_LABELS[region] : 'your region';
+
+        // Update the two region placeholders in the DOM
+        var regionEl       = document.getElementById('display-region');
+        var regionInlineEl = document.getElementById('display-region-inline');
+        if (regionEl)       regionEl.textContent       = label;
+        if (regionInlineEl) regionInlineEl.textContent = label;
+
+        // ── Open Stripe Portal ────────────────────────────────────────────────
+        function openStripePortal() {
+            var btn = document.getElementById('btn-manage-sub');
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25"/><path d="M21 12A9 9 0 0112 3"/></svg> Opening Stripe portal…';
+
+            // Log the optional exit reason — useful for product analytics
+            var reason = document.getElementById('exit-reason').value;
+            if (reason) {
+                try {
+                    var existing = JSON.parse(localStorage.getItem('gr_exit_feedback') || '[]');
+                    existing.push({ reason: reason, ts: new Date().toISOString(), region: region });
+                    localStorage.setItem('gr_exit_feedback', JSON.stringify(existing.slice(-20)));
+                } catch (e) { /* non-critical */ }
+            }
+
+            // Build portal URL — pre-fill email if available
+            var portalUrl = STRIPE_PORTAL_URL;
+            if (email) {
+                portalUrl += (portalUrl.indexOf('?') === -1 ? '?' : '&')
+                           + 'prefilled_email=' + encodeURIComponent(email);
+            }
+
+            // Small delay so the button state is visible before navigation
+            setTimeout(function () {
+                window.location.href = portalUrl;
+            }, 280);
+        }
+    </script>
+</body>
+</html>
