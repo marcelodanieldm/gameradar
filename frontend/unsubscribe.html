@@ -259,15 +259,21 @@
     <script>
         // ─────────────────────────────────────────────────────────────────────
         //  Configuration
-        //  Replace STRIPE_PORTAL_URL with your Stripe Customer Portal link.
         //
-        //  To find it:
-        //    Stripe Dashboard → Settings → Customer portal → Copy link
-        //    It looks like: https://billing.stripe.com/p/login/YOUR_ID
+        //  PRIMARY flow (when api_powerbi.py is running):
+        //    Browser POSTs {email} → POST /stripe/portal-session
+        //    Server looks up customer by email → returns one-time session URL
+        //    Browser redirects to session URL (customer ID never leaves server)
         //
-        //  To pre-fill the customer's email, append: ?prefilled_email=…
+        //  FALLBACK (if API is unreachable):
+        //    Redirect to the static Customer Portal URL with ?prefilled_email=
+        //    This lets Stripe identify the customer from their inbox.
+        //
+        //  Replace STRIPE_PORTAL_FALLBACK_URL with your Customer Portal link:
+        //    Stripe Dashboard → Settings → Billing → Customer portal → Copy link
         // ─────────────────────────────────────────────────────────────────────
-        var STRIPE_PORTAL_URL = 'https://billing.stripe.com/p/login/YOUR_PORTAL_ID';
+        var PORTAL_SESSION_API   = 'http://localhost:8000/stripe/portal-session';
+        var STRIPE_PORTAL_FALLBACK_URL = 'https://billing.stripe.com/p/login/YOUR_PORTAL_ID';
 
         var REGION_LABELS = {
             india:    '🇮🇳 India',
@@ -280,60 +286,107 @@
             global:   '🌐 Global',
         };
 
-        // ── Populate region from URL param or localStorage ────────────────────
-        // Priority: ?region= URL parameter → localStorage gr_rookie_region
-        // This lets the unsubscribe link in the email include: ?region=india
-        function getRegion() {
-            var params = new URLSearchParams(window.location.search);
-            var fromUrl = (params.get('region') || '').trim().toLowerCase();
-            if (fromUrl) return fromUrl;
-            return (localStorage.getItem('gr_rookie_region') || '').trim().toLowerCase();
+        // ── Read region + email from URL params or localStorage ───────────────
+        function getParam(key) {
+            var v = new URLSearchParams(window.location.search).get(key);
+            return v ? v.trim().toLowerCase() : '';
         }
 
-        function getEmail() {
-            var params = new URLSearchParams(window.location.search);
-            var fromUrl = (params.get('email') || '').trim().toLowerCase();
-            if (fromUrl) return fromUrl;
-            return (localStorage.getItem('gr_rookie_email') || '').trim().toLowerCase();
-        }
-
-        var region = getRegion();
-        var email  = getEmail();
+        var region = getParam('region') || (localStorage.getItem('gr_rookie_region') || '').trim().toLowerCase();
+        var email  = getParam('email')  || (localStorage.getItem('gr_rookie_email')  || '').trim().toLowerCase();
         var label  = (region && REGION_LABELS[region]) ? REGION_LABELS[region] : 'your region';
 
-        // Update the two region placeholders in the DOM
+        // Populate region placeholders
         var regionEl       = document.getElementById('display-region');
         var regionInlineEl = document.getElementById('display-region-inline');
         if (regionEl)       regionEl.textContent       = label;
         if (regionInlineEl) regionInlineEl.textContent = label;
 
-        // ── Open Stripe Portal ────────────────────────────────────────────────
-        function openStripePortal() {
+        // ── Button state helpers ──────────────────────────────────────────────
+        function btnLoading(text) {
             var btn = document.getElementById('btn-manage-sub');
             btn.disabled = true;
-            btn.innerHTML = '<svg class="w-4 h-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25"/><path d="M21 12A9 9 0 0112 3"/></svg> Opening Stripe portal…';
+            btn.innerHTML =
+                '<svg class="w-4 h-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none"' +
+                ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+                ' aria-hidden="true"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity="0.25"/>' +
+                '<path d="M21 12A9 9 0 0112 3"/></svg> ' + text;
+        }
 
-            // Log the optional exit reason — useful for product analytics
+        function btnError(text) {
+            var btn = document.getElementById('btn-manage-sub');
+            btn.disabled = false;
+            btn.innerHTML =
+                '<svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"' +
+                ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+                ' aria-hidden="true"><circle cx="12" cy="12" r="10"/>' +
+                '<line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' +
+                '</svg> ' + text;
+            btn.className = btn.className.replace('btn-manage',
+                'bg-red-500/10 border border-red-500/30 text-red-400 w-full px-6 py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5');
+        }
+
+        // ── Log exit reason to localStorage (analytics, non-blocking) ─────────
+        function logExitReason() {
             var reason = document.getElementById('exit-reason').value;
-            if (reason) {
-                try {
-                    var existing = JSON.parse(localStorage.getItem('gr_exit_feedback') || '[]');
-                    existing.push({ reason: reason, ts: new Date().toISOString(), region: region });
-                    localStorage.setItem('gr_exit_feedback', JSON.stringify(existing.slice(-20)));
-                } catch (e) { /* non-critical */ }
-            }
+            if (!reason) return;
+            try {
+                var existing = JSON.parse(localStorage.getItem('gr_exit_feedback') || '[]');
+                existing.push({ reason: reason, ts: new Date().toISOString(), region: region });
+                localStorage.setItem('gr_exit_feedback', JSON.stringify(existing.slice(-20)));
+            } catch (e) { /* non-critical */ }
+        }
 
-            // Build portal URL — pre-fill email if available
-            var portalUrl = STRIPE_PORTAL_URL;
+        // ── Fallback: static portal URL + prefilled email ─────────────────────
+        function redirectFallback() {
+            var url = STRIPE_PORTAL_FALLBACK_URL;
             if (email) {
-                portalUrl += (portalUrl.indexOf('?') === -1 ? '?' : '&')
-                           + 'prefilled_email=' + encodeURIComponent(email);
+                url += (url.indexOf('?') === -1 ? '?' : '&') +
+                       'prefilled_email=' + encodeURIComponent(email);
+            }
+            window.location.href = url;
+        }
+
+        // ── Primary: call FastAPI → get session URL ────────────────────────────
+        function openStripePortal() {
+            logExitReason();
+
+            // If no email available, go straight to fallback
+            if (!email) {
+                btnLoading('Opening Stripe portal\u2026');
+                setTimeout(redirectFallback, 280);
+                return;
             }
 
-            // Small delay so the button state is visible before navigation
-            setTimeout(function () {
-                window.location.href = portalUrl;
-            }, 280);
+            btnLoading('Generating secure session\u2026');
+
+            var returnUrl = window.location.origin + '/landing.html';
+
+            fetch(PORTAL_SESSION_API, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ email: email, return_url: returnUrl }),
+            })
+            .then(function (res) {
+                if (!res.ok) {
+                    return res.json().then(function (body) {
+                        throw new Error(body.detail || ('HTTP ' + res.status));
+                    });
+                }
+                return res.json();
+            })
+            .then(function (data) {
+                if (!data.url) throw new Error('No URL returned by server');
+                btnLoading('Redirecting to Stripe\u2026');
+                // Small pause so the user sees the loading state
+                setTimeout(function () { window.location.href = data.url; }, 200);
+            })
+            .catch(function (err) {
+                console.warn('Portal session API error \u2014 using fallback. Reason:', err.message);
+                // API unreachable or error — fall back to static portal link
+                btnLoading('Opening Stripe portal\u2026');
+                setTimeout(redirectFallback, 400);
+            });
         }
     </script>
 </body>

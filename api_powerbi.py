@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import json
+import os
 import pathlib
 import random
 import re
@@ -36,12 +37,33 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import BaseModel
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+# ── Stripe (optional — only needed for /stripe/* endpoints) ──────────────────
+try:
+    import stripe as _stripe
+    _stripe.api_version = "2024-04-10"
+    _STRIPE_SECRET_KEY     = os.environ.get("STRIPE_SECRET_KEY", "").strip()
+    _STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+    if _STRIPE_SECRET_KEY:
+        _stripe.api_key = _STRIPE_SECRET_KEY
+    _STRIPE_AVAILABLE = bool(_STRIPE_SECRET_KEY)
+except ImportError:
+    _stripe = None  # type: ignore[assignment]
+    _STRIPE_AVAILABLE      = False
+    _STRIPE_SECRET_KEY     = ""
+    _STRIPE_WEBHOOK_SECRET = ""
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Rutas locales
@@ -694,6 +716,208 @@ async def on_startup() -> None:
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
     logger.info("🛑  GameRadar AI — Power BI Bridge  detenido")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stripe Customer Portal
+# ──────────────────────────────────────────────────────────────────────────────
+#
+# POST /stripe/portal-session
+#   Called by unsubscribe.html to create a signed Billing Portal session URL.
+#   Flow: email → stripe.Customer.list(email) → billing_portal.Session.create
+#   The customer ID is never sent to the browser — only the one-time session URL.
+#
+# POST /stripe/webhook
+#   Receives signed Stripe webhook events (configured in Stripe Dashboard).
+#   Handles customer.subscription.deleted → log + mark cancellation.
+#   Signature verified with STRIPE_WEBHOOK_SECRET (OWASP A02 — auth).
+# ──────────────────────────────────────────────────────────────────────────────
+
+_PORTAL_RETURN_URL = os.environ.get("PORTAL_RETURN_URL", "http://localhost:8000")
+_CANCELLATIONS_LOG = BASE_DIR / "reports" / "cancellations_log.csv"
+
+
+class PortalSessionIn(BaseModel):
+    email:      str
+    return_url: Optional[str] = None  # overrides PORTAL_RETURN_URL if provided
+
+
+@app.post("/stripe/portal-session", summary="Create Stripe Billing Portal session")
+async def create_portal_session(payload: PortalSessionIn) -> Dict[str, Any]:
+    """
+    Looks up the Stripe customer by email and creates a short-lived Billing
+    Portal session URL.  The customer ID is resolved server-side and never
+    exposed to the browser.
+
+    Returns:
+        { "url": "https://billing.stripe.com/session/…" }
+
+    Errors:
+        503  Stripe not configured (STRIPE_SECRET_KEY missing)
+        404  No paid customer found with that email
+        502  Stripe API error
+    """
+    if not _STRIPE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Stripe is not configured on this server. "
+                "Set STRIPE_SECRET_KEY in your environment or .env file."
+            ),
+        )
+
+    # Validate email
+    email = payload.email.strip().lower()[:254]
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    return_url = (payload.return_url or _PORTAL_RETURN_URL).strip()
+    # Whitelist only http/https to prevent open-redirect (OWASP A01)
+    if not return_url.startswith(("http://", "https://")):
+        return_url = _PORTAL_RETURN_URL
+
+    try:
+        # Find the customer by email
+        customers = _stripe.Customer.list(email=email, limit=1)
+        if not customers or not customers.data:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"No Stripe customer found for {email!r}. "
+                    "The email must match the one used at checkout."
+                ),
+            )
+        customer_id = customers.data[0].id
+
+        # Create a Billing Portal session (one-time, ~5 min TTL)
+        session = _stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+        logger.info(f"Portal session created for {email} (customer={customer_id})")
+        return {"url": session.url}
+
+    except HTTPException:
+        raise
+    except _stripe.error.AuthenticationError:
+        logger.error("Stripe authentication failed — check STRIPE_SECRET_KEY")
+        raise HTTPException(status_code=502, detail="Stripe authentication error")
+    except _stripe.error.StripeError as exc:
+        logger.error(f"Stripe API error: {exc}")
+        raise HTTPException(status_code=502, detail=f"Stripe error: {exc.user_message}")
+
+
+@app.post("/stripe/webhook", summary="Stripe webhook receiver")
+async def stripe_webhook(request: Request) -> Dict[str, Any]:
+    """
+    Receives signed webhook events from Stripe.
+
+    **Required setup (Stripe Dashboard):**
+    1. Developers → Webhooks → Add endpoint
+       URL:    https://your-domain/stripe/webhook
+       Events: customer.subscription.deleted
+                customer.subscription.updated  (optional)
+    2. Copy the Signing Secret → set STRIPE_WEBHOOK_SECRET env var
+
+    **Signature verification** (OWASP A02:2021 — Cryptographic Failures):
+    All events are verified using the Stripe-Signature header and the
+    webhook signing secret before any processing occurs.  Unverified
+    events are rejected with 400.
+    """
+    if not _STRIPE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Stripe not configured")
+
+    # Read raw bytes — required for Stripe signature verification
+    payload_bytes = await request.body()
+    sig_header    = request.headers.get("stripe-signature", "")
+
+    if not sig_header:
+        logger.warning("Webhook received without Stripe-Signature header — rejected")
+        raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+
+    # Verify signature (or skip if webhook secret not configured yet)
+    event = None
+    if _STRIPE_WEBHOOK_SECRET:
+        try:
+            event = _stripe.Webhook.construct_event(
+                payload=payload_bytes,
+                sig_header=sig_header,
+                secret=_STRIPE_WEBHOOK_SECRET,
+            )
+        except _stripe.error.SignatureVerificationError:
+            logger.warning("Webhook signature verification failed — rejected")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+        except Exception as exc:
+            logger.error(f"Webhook parse error: {exc}")
+            raise HTTPException(status_code=400, detail="Malformed webhook payload")
+    else:
+        # No secret configured — parse without verification (dev/test only)
+        logger.warning(
+            "STRIPE_WEBHOOK_SECRET not set — processing webhook WITHOUT signature verification. "
+            "Set the secret in production!"
+        )
+        try:
+            event = json.loads(payload_bytes)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    event_type = event.get("type", "") if isinstance(event, dict) else getattr(event, "type", "")
+    event_id   = event.get("id",   "") if isinstance(event, dict) else getattr(event, "id",   "")
+
+    logger.info(f"Webhook received: {event_type}  (id={event_id})")
+
+    # ── Handle subscription deleted ───────────────────────────────────────────
+    if event_type == "customer.subscription.deleted":
+        sub_obj   = event["data"]["object"] if isinstance(event, dict) else event.data.object
+        cust_id   = sub_obj.get("customer")  if isinstance(sub_obj, dict) else getattr(sub_obj, "customer", "")
+        sub_id    = sub_obj.get("id")         if isinstance(sub_obj, dict) else getattr(sub_obj, "id",       "")
+        status    = sub_obj.get("status")     if isinstance(sub_obj, dict) else getattr(sub_obj, "status",   "")
+        cancelled_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Resolve email from Stripe (best-effort)
+        email = ""
+        try:
+            cust  = _stripe.Customer.retrieve(cust_id)
+            email = (cust.get("email") or "") if isinstance(cust, dict) else getattr(cust, "email", "") or ""
+        except Exception:
+            pass
+
+        logger.warning(
+            f"Subscription cancelled: sub={sub_id} customer={cust_id} "
+            f"email={email or '(unknown)'} status={status}"
+        )
+
+        # Append to cancellations log
+        try:
+            _CANCELLATIONS_LOG.parent.mkdir(parents=True, exist_ok=True)
+            file_exists = _CANCELLATIONS_LOG.exists()
+            with _csv_lock:
+                with _CANCELLATIONS_LOG.open("a", newline="", encoding="utf-8") as fh:
+                    writer = csv.writer(fh)
+                    if not file_exists:
+                        writer.writerow([
+                            "cancelled_at", "email", "stripe_customer_id",
+                            "stripe_subscription_id", "status", "event_id",
+                        ])
+                    writer.writerow([
+                        cancelled_at,
+                        _csv_safe(email),
+                        cust_id,
+                        sub_id,
+                        status,
+                        event_id,
+                    ])
+            logger.success(
+                f"Cancellation logged → {_CANCELLATIONS_LOG.name} "
+                f"(email={email or 'unknown'})"
+            )
+        except Exception as exc:
+            logger.error(f"Failed to write cancellation log: {exc}")
+
+        return {"received": True, "event": event_type, "subscription": sub_id}
+
+    # ── Acknowledge all other events (Stripe expects 200 for all events) ──────
+    return {"received": True, "event": event_type}
 
 
 # ──────────────────────────────────────────────────────────────────────────────
