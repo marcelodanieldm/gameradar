@@ -241,6 +241,398 @@ Alerts: WhatsApp · Telegram · Email
 
 ---
 
+## Rookie Plan — Complete Guide
+
+The **Rookie Plan ($19/mo)** is the primary subscriber product. It delivers an automated, AI-scored PDF scouting report every Monday for the subscriber's chosen esports region. This section covers the full lifecycle — from landing page to Hub — for both users and developers.
+
+### Technology Stack (Rookie Pipeline)
+
+| Layer | Technology | Role |
+|---|---|---|
+| **Scraping** | Playwright 1.41 · httpx 0.26 · aiohttp 3.9 | Collect raw player data from 11 Asian sources |
+| **ETL** | `bronze_to_silver.py` · deep-translator 1.11 | Translate CJK/HI/VI → EN, score, deduplicate |
+| **Scoring** | Custom formula · intelligence.py · pandas 2.2 | GameRadar Score = KDA×0.35 + WR×0.45 + MatchFreq×0.20 |
+| **Report** | Jinja2 3.1 · WeasyPrint 62.3 | 2-page A4 PDF from `templates/rookie_report.html` |
+| **API** | FastAPI 0.109 · uvicorn 0.27 | Subscriber auth, preferences, Stripe webhooks |
+| **Delivery** | Python smtplib · MIME multipart | PDF email attachment, Monday 08:00 UTC |
+| **Frontend** | Vanilla HTML/JS · Tailwind CSS CDN | Landing, checkout, success, Hub (no build step) |
+| **Payments** | Stripe 8.2 · stripe-checkout | Subscription billing + Stripe Customer Portal |
+| **Storage** | `subscribers.csv` + threading.Lock | Sole subscriber data store (no DB required) |
+| **Auth** | HMAC-SHA256 · sessionStorage | Hub session tokens, TTL 24 h |
+
+---
+
+### Screens & User Flow
+
+```
+[1] landing.html              [2] Stripe Checkout
+     │  Rookie Plan CTA  ──────►  (Stripe-hosted)
+     │  email + region form         │
+     │  localStorage save           │
+     │                              ▼
+     │                        [3] success.html
+     │                             │  POST /subscribe → subscribers.csv
+     │                             │  webhook status badge (live)
+     │                             │  "Go to Subscriber Hub →"
+     │                             │
+     │                             ▼
+     │                        [4] hub.html  (Subscriber Hub)
+     │                             │  Auth gate → POST /subscriber/auth
+     │                             │  HMAC token → sessionStorage
+     │                             │
+     │                        ┌────┴─────────────────────────────────┐
+     │                        │  Current Radar card                  │
+     │                        │  Scouting Settings card              │
+     │                        │  Market Heatmap widget               │
+     │                        │  Next Neural Report countdown        │
+     │                        │  Quick API Key widget                │
+     │                        │  Report Archive (last 4 Mondays)     │
+     │                        └──────────────────────────────────────┘
+     │
+[Every Monday 08:00 UTC]
+     delivery.py  →  generate_rookie_report.py  →  SMTP  →  PDF in inbox
+```
+
+---
+
+### Screen 1 — Landing Page (`frontend/landing.html`)
+
+**Purpose:** Convert visitors into subscribers via the Rookie Plan checkout.
+
+**Sections:**
+- Nav bar with language switcher (EN / ES / Esperanto)
+- Hero — "Discover Hidden E-Sports Talent Before Your Competitors Do"
+- Stats: 7 Asian Markets · AI Powered · 11 Data Sources · Multilingual
+- Features grid: Transcultural UX · Semantic Search · Real-time Alerts · PDF Reports
+- How It Works (3-step): Ingest → Score → Deliver
+- **Rookie Plan modal** (opens on CTA click): email field, region selector, optional messenger handle, "Subscribe with Stripe →" button
+- Pricing table (Street Scout / Rookie / Elite Analyst)
+- Contact section
+
+**Rookie sign-up flow inside landing.html:**
+1. User clicks "Get Started" or "Rookie Plan" → modal opens
+2. User fills `email`, selects `region` (India / Korea LCK / China LPL / Vietnam / Japan / Asia Pacific / Global), optional messenger
+3. On submit: values stored in `localStorage` (`gr_rookie_email`, `gr_rookie_region`, `gr_rookie_messenger`) and redirect to Stripe Checkout
+4. On Stripe success, Stripe redirects to `success.html?session_id=…`
+
+---
+
+### Screen 2 — Stripe Checkout
+
+**Hosted by Stripe** — no custom screen.
+
+- Triggers: subscription to the Rookie price ID (`STRIPE_ROOKIE_PRICE_ID`)
+- On success → redirect to `success.html?session_id={CHECKOUT_SESSION_ID}`
+- On cancel → back to landing page
+
+---
+
+### Screen 3 — Success Page (`frontend/success.html`)
+
+**Purpose:** Confirm payment and register the subscriber.
+
+**What it shows:**
+- Animated check icon with pulse ring
+- "You're on the Radar." headline
+- Info card: delivery schedule (Every Monday · 08:00 UTC), registered email, region flag
+- Live webhook status badge (yellow → green / red)
+- CTA: "Go to Subscriber Hub →" (deep-links to hub.html with `?email=…&region=…`)
+
+**What happens in the background (`success.html` JS):**
+1. Reads `email`, `region`, `messenger` from `localStorage`
+2. `POST http://localhost:8000/subscribe` with `{email, region, messenger, plan: "rookie", source: "stripe_checkout"}`
+3. FastAPI writes a new row to `subscribers.csv` (with `active_region`, `target_language`, `status: Active`)
+4. Webhook status badge updates to green on success, red on failure
+5. Hub link gains `?email=…&region=…` query params for seamless deep-link
+
+---
+
+### Screen 4 — Subscriber Hub (`frontend/hub.html`)
+
+**Purpose:** Self-service portal for active subscribers. No framework — pure HTML/JS with Tailwind CDN.
+
+#### Auth Gate (overlay)
+
+```
+┌─────────────────────────────────┐
+│  GAMERADAR AI  (logo)           │
+│  Enter your subscriber email    │
+│  [email input]                  │
+│  [Access Hub →]                 │
+└─────────────────────────────────┘
+```
+
+- Calls `POST /subscriber/auth {email}` → receives HMAC token
+- Token stored in `sessionStorage` (cleared on tab close — never in localStorage)
+- On 401 → shows "Not found or not active" (OWASP A07: no email enumeration)
+- Triggered on page load; re-triggered after logout
+
+#### Hub Panels (after login)
+
+**Sticky Nav:**
+```
+GAMERADAR AI  [email pill]  [Manage plan]  [Sign out]
+```
+
+**1 — Current Radar Card**
+```
+┌─────────────────────────────────────────────────┐
+│  [Animated radar SVG]  ● Active                 │
+│                                                 │
+│  🇰🇷 Korea LCK  |  Rookie Plan                │
+│  Next report: Mon 21 Apr 2026                  │
+└─────────────────────────────────────────────────┘
+```
+- Region flag emoji from `REGION_FLAGS` map
+- Live status dot blinks at 2 s interval
+- "Next report" date calculated as next Monday
+
+**2 — Scouting Settings Card**
+```
+┌──────────────────────────────────────────────────┐
+│  Scouting Region    [Korea LCK ▼]               │
+│  Report Language    [English ▼]                  │
+│                              [Save Preferences]  │
+└──────────────────────────────────────────────────┘
+```
+- Region options: Korea LCK · China LPL · India · Japan LJL · Vietnam VCS · Asia Pacific · Global
+- Language options: English · Español · 中文 · 日本語 · 한국어 · Tiếng Việt · Português
+- `savePreferences()` → `POST /subscriber/preferences` with `Authorization: Bearer <token>`
+- Unsaved changes trigger `beforeunload` warning
+- On 401 → auto-returns to auth gate
+
+**3 — Market Heatmap Widget**
+```
+┌──────────────────────────────────────────────────┐
+│  Market Heatmap                                  │
+│  [██████████████████░░░░░] High  85%             │
+│  5 tournaments  ·  12 matches tracked this week  │
+└──────────────────────────────────────────────────┘
+```
+- Animated CSS progress bar (cubic-bezier transition)
+- Color-coded: green = High / amber = Medium / slate = Low
+- Updates on region change (both on save and on optimistic UI update)
+- Data from `REGION_HEATMAP` JS object (static mock, ready for API wiring)
+
+**4 — Next Neural Report Countdown**
+```
+┌──────────────────────────────────────────────────┐
+│  Next Neural Report                              │
+│   02  ·  14  ·  33  ·  [47]                     │
+│  Days   Hrs   Min   Sec                          │
+└──────────────────────────────────────────────────┘
+```
+- Live 1-second interval (`setInterval(1000)`)
+- Target: next Monday 08:00 UTC (handles Monday same-day edge case)
+- Cleared on logout
+
+**5 — Quick API Key Widget**
+```
+┌──────────────────────────────────────────────────┐
+│  Quick API Key                                   │
+│  abc123·····················ef90  [👁]           │
+│  [📋 Copy]  [Docs ↗]                            │
+└──────────────────────────────────────────────────┘
+```
+- Token masked by default; eye-toggle reveals full value
+- Copy: `navigator.clipboard.writeText` + `execCommand` fallback (HTTP support)
+- Docs link → `http://localhost:8000/docs` (FastAPI Swagger UI)
+
+**6 — Report Archive**
+```
+┌──────────────────────────────────────────────────┐
+│  Mon 14 Apr 2026  Korea LCK  [DELIVERED] [PDF ↓] │
+│  Mon 07 Apr 2026  Korea LCK  [DELIVERED] [PDF ↓] │
+│  Mon 21 Apr 2026  Korea LCK  [UPCOMING]           │
+└──────────────────────────────────────────────────┘
+```
+- Shows last 4 Mondays relative to today
+- Download links: `reports/rookie_korea_lck_YYYY-MM-DD.pdf` from local API
+- DELIVERED / UPCOMING badges
+
+---
+
+### Rookie Report PDF (`templates/rookie_report.html`)
+
+**Format:** 2-page A4, dark mode (bg `#0c1524`, accent `#00d4ff`)  
+**Renderer:** WeasyPrint 62.3 → `generate_rookie_report.py`  
+**Data source:** `master_rookie.json` (preferred) → `silver/silver_data.json` (fallback)
+
+**Page 1 — Intelligence Report:**
+| Section | Content |
+|---|---|
+| Header | Logo · "Rookie Scouting Report" · Region badge · Date · Plan badge |
+| Summary Stats | Players ranked · Region avg score · Avg win rate · Avg KDA |
+| Regional Top N | Full ranking table: rank medal · nickname · role badge · KDA · WR · games · GameRadar Score bar · trend |
+
+**Page 2 — Deep Analysis:**
+| Section | Content |
+|---|---|
+| Rising Stars grid | Top 3 cards with SVG avatar, stats row (WR / KDA / games), score display |
+| Market Trends | Translated news items with source badge and date |
+| Performance Radar | 5-axis SVG radar chart: KDA / Win Rate / Consistency / Activity / Score — Top 1 vs Region Average |
+
+**Rookie Score Formula:**
+$$\text{Score} = (\text{KDA}_{norm} \times 0.35) + (\text{WR}_{norm} \times 0.45) + (\text{MatchFreq}_{norm} \times 0.20) \times \text{RegionalMultiplier}$$
+
+Regional multipliers: Korea × 1.20 · India × 0.90 · others × 1.00
+
+---
+
+### Weekly Delivery Pipeline
+
+Every Monday at 08:00 UTC the pipeline runs end-to-end:
+
+```
+GitHub Actions (bronze_strategic.yml)
+    └─ ingest_bronze_targets.py          ← scrape 11 sources → /bronze/
+           └─ bronze_to_silver.py        ← translate + score → silver_data.json
+                  └─ delivery.py         ← per-region PDF + SMTP send
+                         └─ generate_rookie_report.py   ← Jinja2 → WeasyPrint → PDF
+```
+
+**`delivery.py` per-region logic:**
+1. Load `subscribers.csv` — resolve effective region (`active_region` overrides `region_plan`)
+2. Group subscribers by effective region
+3. For each unique region: call `generate_rookie_report.main(region=..., html_only=False)` → get PDF path
+4. SMTP batch-send PDF as attachment to all subscribers in that region
+5. Write timestamped delivery log to `reports/delivery_log_YYYY-MM-DD.csv`
+
+**Running locally:**
+```powershell
+# Full delivery (requires SMTP env vars)
+.venv\Scripts\python.exe delivery.py
+
+# Dry run — validates everything, no emails sent, no files modified
+.venv\Scripts\python.exe delivery.py --dry-run
+
+# Single region only
+.venv\Scripts\python.exe delivery.py --region "Korea LCK"
+
+# Generate a report without sending
+.venv\Scripts\python.exe generate_rookie_report.py --region "India" --html-only
+
+# Using a custom data source
+.venv\Scripts\python.exe generate_rookie_report.py --source silver --html-only
+```
+
+---
+
+### Local Installation (Full Rookie Stack)
+
+#### Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| Python | 3.11+ | Tested on 3.11.x |
+| pip | latest | `python -m pip install --upgrade pip` |
+| Git | any | For `git clone` and GitHub Actions |
+| Playwright browsers | Chromium | `playwright install chromium` |
+| WeasyPrint GTK (optional) | 3.24+ | Only for PDF output on Windows; not needed for HTML preview |
+| Stripe CLI (optional) | latest | For local webhook forwarding |
+
+#### Step-by-step
+
+```powershell
+# 1. Clone
+git clone https://github.com/marcelodanieldm/gameradar.git
+cd gameradar
+
+# 2. Virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1      # Windows PowerShell
+# or: source .venv/bin/activate  # macOS / Linux
+
+# 3. Install all dependencies
+pip install -r requirements.txt
+playwright install chromium
+
+# 4. Environment variables
+copy .env.example .env
+# Edit .env and fill in:
+#   STRIPE_SECRET_KEY=sk_test_...
+#   STRIPE_WEBHOOK_SECRET=whsec_...
+#   HUB_TOKEN_SECRET=any-random-32-char-string
+#   SMTP_USER=your@gmail.com
+#   SMTP_PASSWORD=your-app-password
+
+# 5. Build the silver data layer (skip translation for speed)
+.venv\Scripts\python.exe bronze_to_silver.py --no-translate
+
+# 6. Start the FastAPI backend
+start_api.bat
+# API now available at http://localhost:8000
+# Swagger UI at  http://localhost:8000/docs
+
+# 7. Open the frontend
+# Simply open frontend/landing.html in a browser (no build step needed)
+# OR serve it:
+cd frontend
+python -m http.server 3000
+# Then visit http://localhost:3000/landing.html
+
+# 8. Forward Stripe webhooks (optional — for local subscription testing)
+stripe listen --forward-to localhost:8000/stripe/webhook
+
+# 9. Run a test delivery (dry run — no emails)
+.venv\Scripts\python.exe delivery.py --dry-run
+
+# 10. Generate a PDF report preview
+.venv\Scripts\python.exe generate_rookie_report.py --html-only
+```
+
+#### Minimum viable `.env` for Rookie local testing
+
+```ini
+STRIPE_SECRET_KEY=sk_test_YOUR_KEY
+STRIPE_WEBHOOK_SECRET=whsec_YOUR_SECRET
+HUB_TOKEN_SECRET=change-this-to-any-random-secret
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=xxxx-xxxx-xxxx-xxxx
+SMTP_FROM=GameRadar AI <you@gmail.com>
+PORTAL_RETURN_URL=http://localhost:3000/landing.html
+```
+
+---
+
+### Key Files — Rookie Plan
+
+| File | Role |
+|---|---|
+| `frontend/landing.html` | Marketing landing + Rookie checkout modal |
+| `frontend/success.html` | Post-payment confirmation + subscriber registration |
+| `frontend/hub.html` | Subscriber self-service Hub (auth, preferences, archive, widgets) |
+| `frontend/unsubscribe.html` | Stripe billing portal redirect + retention screen |
+| `templates/rookie_report.html` | 2-page A4 PDF report template (Jinja2) |
+| `generate_rookie_report.py` | PDF renderer CLI (WeasyPrint + radar SVG computation) |
+| `delivery.py` | Weekly delivery pipeline (load subscribers → generate PDF → SMTP) |
+| `subscriber_sync.py` | CSV read/write with locking; `update_preferences()`, `append_subscribers()` |
+| `api_powerbi.py` | FastAPI: `/subscribe`, `/subscriber/auth`, `/subscriber/preferences`, `/stripe/*` |
+| `master_rookie.json` | Pre-built player dataset for Rookie plan reports |
+| `subscribers.csv` | Live subscriber list (email, region, language, status) |
+| `intelligence.py` | Advanced scoring: `rank_players()` (used by report generator) |
+
+---
+
+### General Features
+
+| Feature | Description |
+|---|---|
+| **Zero-framework frontend** | All subscriber-facing pages are plain HTML + Tailwind CDN — no Node.js, no build step |
+| **Serverless-ready data store** | `subscribers.csv` with `threading.Lock()` is the only data store needed for the Rookie pipeline — no database required |
+| **Region-adaptive delivery** | Subscribers can switch their delivery region from the Hub at any time; `active_region` overrides original `region_plan` |
+| **Multilingual reports** | Report language preference stored in `target_language` (ISO 639-1); delivery system reads it for localisation |
+| **Stateless session** | Hub auth tokens stored in `sessionStorage` — cleared on tab close, never in `localStorage` |
+| **OWASP-aligned auth** | HMAC-SHA256 token signing · `hmac.compare_digest` (timing-safe) · 404 for both not-found and inactive emails |
+| **CSV injection prevention** | `_csv_safe()` strips formula-injection characters (`=`, `+`, `-`, `@`) from all CSV writes |
+| **Stripe integration** | Checkout + Customer Portal + webhook handler (`customer.subscription.deleted` → auto-churn) |
+| **PDF without a database** | Reports generated from flat JSON files — works fully offline |
+| **i18n landing pages** | `landing.html` (EN) · `landing-es.html` (ES) · `landing-eo.html` (EO) |
+| **Dark mode throughout** | Uniform slate-950/900/800 + cyan-400/500 accent palette across all pages |
+| **Delivery audit trail** | Every Monday's send logged to `reports/delivery_log_YYYY-MM-DD.csv` |
+
+---
+
 ## Environment Variables
 
 | Variable | Required | Description |
