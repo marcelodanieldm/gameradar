@@ -24,11 +24,14 @@ Uso Power BI:
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import pathlib
 import random
+import re
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -44,10 +47,14 @@ from pydantic import BaseModel
 # Rutas locales
 # ──────────────────────────────────────────────────────────────────────────────
 
-BASE_DIR    = pathlib.Path(__file__).parent
-SILVER_PATH = BASE_DIR / "silver" / "silver_data.json"
-BRONZE_DIR  = BASE_DIR / "bronze"
-PYTHON_EXE  = pathlib.Path(sys.executable)
+BASE_DIR         = pathlib.Path(__file__).parent
+SILVER_PATH      = BASE_DIR / "silver" / "silver_data.json"
+BRONZE_DIR       = BASE_DIR / "bronze"
+PYTHON_EXE       = pathlib.Path(sys.executable)
+SUBSCRIBERS_PATH = BASE_DIR / "subscribers.csv"
+
+# Mutex: prevents race conditions on concurrent CSV writes
+_csv_lock = threading.Lock()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Mapeos Region
@@ -475,6 +482,105 @@ async def export_schema() -> Dict[str, Any]:
             "Profile_URL":                {"type": "url",     "description": "URL del perfil en la fuente original"},
             "Translations_Applied":       {"type": "integer", "description": "Número de campos traducidos automáticamente"},
         },
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rookie Plan subscriber registration
+# ──────────────────────────────────────────────────────────────────────────────
+
+_ALLOWED_REGIONS: Dict[str, str] = {
+    "india":     "India",
+    "korea":     "Korea LCK",
+    "vietnam":   "Vietnam",
+    "thailand":  "Thailand",
+    "china":     "China LPL",
+    "sea":       "SEA",
+    "japan":     "Japan",
+    "global":    "Global",
+}
+
+_EMAIL_RE = re.compile(
+    r'^[a-zA-Z0-9._%+\-]{1,64}@[a-zA-Z0-9.\-]{1,255}\.[a-zA-Z]{2,}$'
+)
+
+
+def _csv_safe(value: str) -> str:
+    """Prevent CSV formula-injection (OWASP A03:2021)."""
+    value = value.strip()
+    if value and value[0] in ("=", "+", "-", "@", "\t", "\r", "|"):
+        value = "'" + value
+    return value
+
+
+class SubscriberIn(BaseModel):
+    email:     str
+    region:    str
+    messenger: Optional[str] = ""
+    plan:      str           = "rookie"
+    source:    str           = "stripe_checkout"
+
+
+@app.post("/subscribe", summary="Register Rookie Plan subscriber after Stripe checkout")
+async def subscribe(sub: SubscriberIn) -> Dict[str, Any]:
+    """
+    Webhook receiver called by `success.html` immediately after the Stripe
+    payment redirect.  Validates the payload and appends one row to
+    `subscribers.csv`.
+
+    Security measures applied:
+    - Email validated against strict regex (no header injection)
+    - Region validated against fixed whitelist
+    - All string fields sanitised against CSV formula-injection (OWASP A03)
+    - File writes protected by a threading.Lock against concurrent requests
+    """
+    # ── 1. Validate email ─────────────────────────────────────────────────────
+    email = sub.email.strip().lower()[:254]
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    # ── 2. Validate region (whitelist) ────────────────────────────────────────
+    region_key = sub.region.strip().lower()
+    if region_key not in _ALLOWED_REGIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown region '{region_key}'. Allowed: {list(_ALLOWED_REGIONS)}",
+        )
+    region_display = _ALLOWED_REGIONS[region_key]
+
+    # ── 3. Sanitise optional fields ───────────────────────────────────────────
+    messenger = _csv_safe(sub.messenger or "")[:64]
+    plan      = _csv_safe(sub.plan)[:32]
+    source    = _csv_safe(sub.source)[:64]
+    ts        = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # ── 4. Append to CSV (mutex-protected) ───────────────────────────────────
+    with _csv_lock:
+        file_exists = SUBSCRIBERS_PATH.exists()
+        with SUBSCRIBERS_PATH.open("a", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh, quoting=csv.QUOTE_MINIMAL)
+            if not file_exists:
+                writer.writerow(
+                    ["email", "region_plan", "messenger", "plan", "source", "subscribed_at"]
+                )
+            writer.writerow(
+                [
+                    _csv_safe(email),
+                    _csv_safe(region_display),
+                    messenger,
+                    plan,
+                    source,
+                    ts,
+                ]
+            )
+
+    logger.success(f"🆕 New subscriber: {email} → {region_display} (plan={plan})")
+    return {
+        "status":        "subscribed",
+        "email":         email,
+        "region":        region_display,
+        "plan":          plan,
+        "subscribed_at": ts,
     }
 
 

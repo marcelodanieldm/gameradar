@@ -17,6 +17,18 @@
             background-size: 200% 200%;
             animation: gradient 15s ease infinite;
         }
+        @keyframes modal-in {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+        .animate-modal {
+            animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .rookie-grid {
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(6,182,212,.06) 39px, rgba(6,182,212,.06) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(6,182,212,.06) 39px, rgba(6,182,212,.06) 40px);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -31,6 +43,7 @@
                 <div class="hidden md:flex space-x-8 items-center">
                     <a href="#features" class="text-slate-300 hover:text-white transition">Features</a>
                     <a href="#how-it-works" class="text-slate-300 hover:text-white transition">How It Works</a>
+                    <a href="#rookie" class="text-cyan-400 hover:text-cyan-300 transition font-semibold">Rookie Plan</a>
                     <a href="#pricing" class="text-slate-300 hover:text-white transition">Pricing</a>
                     <a href="#contact" class="text-slate-300 hover:text-white transition">Contact</a>
                     <div class="relative group">
@@ -206,6 +219,309 @@
             </div>
         </div>
     </section>
+
+    <!-- Rookie Plan — Entry-Level Subscription -->
+    <section id="rookie" class="py-24 px-4 relative overflow-hidden">
+
+        <!-- Layered background: deep dark + subtle data-grid + radial glow -->
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-cyan-950/10 to-slate-950"></div>
+        <div class="absolute inset-0 rookie-grid"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[640px] h-[640px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative max-w-6xl mx-auto">
+
+            <!-- Section header -->
+            <div class="text-center mb-16">
+                <span class="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mb-6">
+                    <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span>
+                    Entry Level · Local Market Intelligence
+                </span>
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
+                    Start Scouting Like a Pro.<br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Today.</span>
+                </h2>
+                <p class="text-slate-400 text-lg max-w-xl mx-auto">
+                    One region. Elite-grade data pipeline. Weekly intelligence — straight to your inbox.
+                </p>
+            </div>
+
+            <!-- Two-column layout: trust signals + pricing card -->
+            <div class="flex flex-col lg:flex-row items-center justify-center gap-14 lg:gap-20">
+
+                <!-- Left column — value props -->
+                <div class="lg:w-[420px] space-y-8">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="text-lg">🎯</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">One Region. Laser Focus.</h4>
+                            <p class="text-slate-400 text-sm leading-relaxed">Choose the market you care about. Receive curated intelligence from that region only — no noise, no irrelevant data.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="text-lg">⚡</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">Same Pipeline. Fraction of the Price.</h4>
+                            <p class="text-slate-400 text-sm leading-relaxed">GameRadar Score, KDA, win rate, rank trajectory — the exact data pipeline that powers enterprise teams, at $19/mo.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="text-lg">📬</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">Weekly. Inbox-Ready.</h4>
+                            <p class="text-slate-400 text-sm leading-relaxed">Every Monday 08:00 UTC. A professionally formatted PDF report with the top emerging talents from your chosen region.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="text-lg">🔒</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">No Risk. Cancel Anytime.</h4>
+                            <p class="text-slate-400 text-sm leading-relaxed">No contracts. No commitments. Upgrade whenever you're ready — or stay on Rookie. It pays for itself with a single signing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column — Pricing Card -->
+                <div class="w-full max-w-sm lg:w-auto flex-shrink-0">
+                    <div class="relative group">
+                        <!-- Ambient glow -->
+                        <div class="absolute -inset-px bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur-md opacity-30 group-hover:opacity-60 transition-opacity duration-500 pointer-events-none"></div>
+
+                        <!-- Card -->
+                        <div class="relative bg-slate-900 rounded-2xl border border-cyan-500/30 p-8 shadow-2xl">
+
+                            <!-- Plan label row -->
+                            <div class="flex items-center justify-between mb-7">
+                                <span class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold tracking-[0.15em] uppercase px-3 py-1.5 rounded-full">
+                                    Rookie Plan
+                                </span>
+                                <span class="text-slate-600 text-[10px] font-mono">LIVE · v2.1</span>
+                            </div>
+
+                            <!-- Price -->
+                            <div class="mb-1">
+                                <span class="text-6xl font-bold text-white tracking-tight">$19</span>
+                                <span class="text-slate-400 text-xl ml-1">/mo</span>
+                            </div>
+                            <p class="text-cyan-400 text-xs font-bold tracking-[0.12em] uppercase mb-7">Local Market Intelligence</p>
+
+                            <!-- Divider -->
+                            <div class="flex items-center mb-6">
+                                <div class="flex-1 h-px bg-slate-800"></div>
+                                <span class="mx-3 text-slate-600 text-[10px] font-mono tracking-widest">INCLUDES</span>
+                                <div class="flex-1 h-px bg-slate-800"></div>
+                            </div>
+
+                            <!-- Features -->
+                            <ul class="space-y-3.5 mb-7">
+                                <li class="flex items-center gap-3">
+                                    <div class="w-5 h-5 bg-cyan-500/15 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                    <span class="text-slate-300 text-sm">1 regional market <span class="text-slate-500">(your choice)</span></span>
+                                </li>
+                                <li class="flex items-center gap-3">
+                                    <div class="w-5 h-5 bg-cyan-500/15 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                    <span class="text-slate-300 text-sm">Weekly PDF scouting report</span>
+                                </li>
+                                <li class="flex items-center gap-3">
+                                    <div class="w-5 h-5 bg-cyan-500/15 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                    <span class="text-slate-300 text-sm">GameRadar Score · KDA · Win Rate</span>
+                                </li>
+                                <li class="flex items-center gap-3">
+                                    <div class="w-5 h-5 bg-cyan-500/15 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                    <span class="text-slate-300 text-sm">Wanplus · Dak.gg · TEC India data</span>
+                                </li>
+                                <li class="flex items-center gap-3">
+                                    <div class="w-5 h-5 bg-cyan-500/15 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </div>
+                                    <span class="text-slate-300 text-sm">Discord / Telegram delivery <span class="text-slate-500">(opt.)</span></span>
+                                </li>
+                            </ul>
+
+                            <!-- Micro-copy callout -->
+                            <div class="bg-cyan-500/5 border border-cyan-500/20 rounded-xl px-5 py-4 mb-7">
+                                <p class="text-cyan-300 text-sm text-center font-medium leading-snug">
+                                    "Get your first professional scouting report<br/>in your inbox in less than 5 minutes."
+                                </p>
+                            </div>
+
+                            <!-- CTA button -->
+                            <button
+                                id="rookie-cta"
+                                type="button"
+                                onclick="openRookieModal()"
+                                class="w-full relative overflow-hidden bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-xl font-bold tracking-wide text-sm transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                            >
+                                Get Access Now
+                            </button>
+
+                            <p class="text-slate-600 text-xs text-center mt-4">
+                                No credit card required · Cancel anytime
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         Rookie Plan Modal
+         Closes on backdrop click or × button
+    ══════════════════════════════════════════════════════ -->
+    <div
+        id="rookie-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        class="hidden fixed inset-0 z-50 items-center justify-center p-4"
+        onclick="if(event.target===this) closeRookieModal()"
+    >
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm"></div>
+
+        <!-- Modal panel -->
+        <div
+            class="animate-modal relative bg-slate-900 border border-cyan-500/25 rounded-2xl w-full max-w-md shadow-2xl shadow-cyan-500/10 z-10"
+            onclick="event.stopPropagation()"
+        >
+            <!-- Header -->
+            <div class="flex items-start justify-between p-6 pb-5 border-b border-slate-800">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></span>
+                        <span class="text-cyan-400 text-[10px] font-mono font-bold tracking-[0.15em] uppercase">Rookie Plan · $19/mo</span>
+                    </div>
+                    <h3 id="modal-title" class="text-white text-xl font-bold">Get Access Now</h3>
+                </div>
+                <button
+                    type="button"
+                    onclick="closeRookieModal()"
+                    class="w-8 h-8 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg flex items-center justify-center transition flex-shrink-0 mt-0.5"
+                    aria-label="Close modal"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Form state -->
+            <div id="rookie-form-wrap" class="p-6">
+                <form id="rookie-form" class="space-y-5" novalidate onsubmit="handleRookieSubmit(event)">
+
+                    <!-- Email -->
+                    <div>
+                        <label for="rookie-email" class="block text-slate-300 text-sm font-semibold mb-2">
+                            Email Address <span class="text-cyan-400">*</span>
+                        </label>
+                        <input
+                            type="email"
+                            id="rookie-email"
+                            name="email"
+                            required
+                            autocomplete="email"
+                            maxlength="254"
+                            class="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition text-sm"
+                            placeholder="you@organization.com"
+                        />
+                        <p id="rookie-email-err" class="text-red-400 text-xs mt-1.5 hidden">Please enter a valid email address.</p>
+                    </div>
+
+                    <!-- Region -->
+                    <div>
+                        <label for="rookie-region" class="block text-slate-300 text-sm font-semibold mb-2">
+                            Region of Interest <span class="text-cyan-400">*</span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                id="rookie-region"
+                                name="region"
+                                required
+                                class="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition text-sm cursor-pointer"
+                            >
+                                <option value="" disabled selected>Select your market</option>
+                                <option value="india">🇮🇳  India</option>
+                                <option value="korea">🇰🇷  Korea</option>
+                                <option value="vietnam">🇻🇳  Vietnam</option>
+                                <option value="thailand">🇹🇭  Thailand</option>
+                                <option value="china">🇨🇳  China</option>
+                                <option value="sea">🌏  SEA — Southeast Asia</option>
+                                <option value="japan">🇯🇵  Japan</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                        <p id="rookie-region-err" class="text-red-400 text-xs mt-1.5 hidden">Please select a region.</p>
+                    </div>
+
+                    <!-- Discord / Telegram -->
+                    <div>
+                        <label for="rookie-messenger" class="block text-slate-300 text-sm font-semibold mb-2">
+                            Discord / Telegram Username
+                            <span class="text-slate-500 font-normal ml-1 text-xs">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="rookie-messenger"
+                            name="messenger"
+                            autocomplete="off"
+                            maxlength="64"
+                            class="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40 transition text-sm"
+                            placeholder="@username or User#1234"
+                        />
+                        <p class="text-slate-500 text-xs mt-1.5">We'll also deliver reports directly to your chat app.</p>
+                    </div>
+
+                    <!-- Submit -->
+                    <button
+                        type="submit"
+                        id="rookie-submit-btn"
+                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white py-4 rounded-xl font-bold tracking-wide transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-[1.01] text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                    >
+                        Get Access Now
+                    </button>
+
+                    <p class="text-slate-600 text-xs text-center">
+                        By submitting you agree to our <a href="#" class="text-cyan-400/80 hover:text-cyan-300 transition">Privacy Policy</a>.
+                        No spam — unsubscribe anytime.
+                    </p>
+                </form>
+            </div>
+
+            <!-- Success state (hidden by default) -->
+            <div id="rookie-success" class="hidden p-10 text-center">
+                <div class="w-16 h-16 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <h4 class="text-white text-xl font-bold mb-2">You're on the radar.</h4>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Check your inbox — your first scouting report is on its way. Next delivery: <strong class="text-cyan-400">Monday 08:00 UTC</strong>.
+                </p>
+                <button
+                    type="button"
+                    onclick="closeRookieModal()"
+                    class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Pricing -->
     <section id="pricing" class="py-20 px-4">
@@ -400,6 +716,7 @@
                         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition"
                     >
                         <option value="">Select a plan</option>
+                        <option value="rookie">Rookie Plan - $19/mo</option>
                         <option value="street-scout">Street Scout - $99/mo</option>
                         <option value="elite-analyst">Elite Analyst - $299/mo</option>
                         <option value="organization">Organization - Custom</option>
@@ -507,5 +824,112 @@
             </div>
         </div>
     </footer>
+    <!-- Rookie Plan modal logic -->
+    <script>
+        // ─────────────────────────────────────────────────────────────────────
+        //  Stripe Configuration
+        //  1. Create a Payment Link in your Stripe Dashboard for $19/mo
+        //  2. Set its Success URL to: https://yourdomain.com/success.html
+        //  3. Paste the Payment Link URL below
+        // ─────────────────────────────────────────────────────────────────────
+        var STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/YOUR_PAYMENT_LINK_ID';
+
+        function openRookieModal() {
+            var modal = document.getElementById('rookie-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Re-trigger entrance animation
+            var panel = modal.querySelector('.animate-modal');
+            panel.style.animation = 'none';
+            panel.offsetHeight; // reflow
+            panel.style.animation = '';
+            // Focus first field
+            setTimeout(function() {
+                document.getElementById('rookie-email').focus();
+            }, 50);
+        }
+
+        function closeRookieModal() {
+            var modal = document.getElementById('rookie-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            // Reset form
+            document.getElementById('rookie-form').reset();
+            document.getElementById('rookie-email-err').classList.add('hidden');
+            document.getElementById('rookie-region-err').classList.add('hidden');
+            document.getElementById('rookie-form').classList.remove('hidden');
+            document.getElementById('rookie-success').classList.add('hidden');
+            var btn = document.getElementById('rookie-submit-btn');
+            btn.disabled = false;
+            btn.textContent = 'Get Access Now';
+        }
+
+        function handleRookieSubmit(e) {
+            e.preventDefault();
+            var valid = true;
+
+            var emailEl   = document.getElementById('rookie-email');
+            var regionEl  = document.getElementById('rookie-region');
+            var emailErr  = document.getElementById('rookie-email-err');
+            var regionErr = document.getElementById('rookie-region-err');
+
+            // Validate email
+            var emailPattern = /^[a-zA-Z0-9._%+\-]{1,64}@[a-zA-Z0-9.\-]{1,255}\.[a-zA-Z]{2,}$/;
+            if (!emailEl.value.trim() || !emailPattern.test(emailEl.value.trim())) {
+                emailErr.classList.remove('hidden');
+                emailEl.classList.add('border-red-500');
+                valid = false;
+            } else {
+                emailErr.classList.add('hidden');
+                emailEl.classList.remove('border-red-500');
+            }
+
+            // Validate region
+            if (!regionEl.value) {
+                regionErr.classList.remove('hidden');
+                regionEl.classList.add('border-red-500');
+                valid = false;
+            } else {
+                regionErr.classList.add('hidden');
+                regionEl.classList.remove('border-red-500');
+            }
+
+            if (!valid) return;
+
+            var email     = emailEl.value.trim().toLowerCase();
+            var region    = regionEl.value;
+            var messenger = (document.getElementById('rookie-messenger').value || '').trim();
+
+            // ── Store subscriber data in localStorage before leaving the page.
+            //    success.html will read and send this to the webhook after Stripe
+            //    redirects back, then clear these keys immediately.
+            localStorage.setItem('gr_rookie_email',     email);
+            localStorage.setItem('gr_rookie_region',    region);
+            localStorage.setItem('gr_rookie_messenger', messenger);
+
+            // Show redirect feedback
+            var btn = document.getElementById('rookie-submit-btn');
+            btn.disabled    = true;
+            btn.textContent = 'Redirecting to Checkout…';
+
+            // Build Stripe URL — prefill email to reduce checkout friction
+            var stripeUrl = STRIPE_PAYMENT_LINK;
+            if (stripeUrl.indexOf('YOUR_PAYMENT_LINK_ID') === -1) {
+                stripeUrl += (stripeUrl.indexOf('?') === -1 ? '?' : '&')
+                           + 'prefilled_email=' + encodeURIComponent(email);
+            }
+
+            // Redirect to Stripe (same tab so back-button returns to site)
+            window.location.href = stripeUrl;
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var modal = document.getElementById('rookie-modal');
+                if (!modal.classList.contains('hidden')) closeRookieModal();
+            }
+        });
+    </script>
 </body>
 </html>
