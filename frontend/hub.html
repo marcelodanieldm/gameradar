@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subscriber Hub — GameRadar AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ── Animations ─────────────────────────────────────────── */
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes radar-sweep {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        @keyframes blip-ping {
+            0%, 100% { opacity: 0.9; r: 2.2; }
+            50%       { opacity: 0.4; r: 3.2; }
+        }
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(16px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes toast-out {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to   { opacity: 0; transform: translateY(10px) scale(0.97); }
+        }
+        @keyframes status-blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.35; }
+        }
+
+        .fade-up-1 { animation: fade-up 0.42s ease both 0.05s; opacity: 0; }
+        .fade-up-2 { animation: fade-up 0.42s ease both 0.15s; opacity: 0; }
+        .fade-up-3 { animation: fade-up 0.42s ease both 0.25s; opacity: 0; }
+        .fade-up-4 { animation: fade-up 0.42s ease both 0.35s; opacity: 0; }
+        .fade-up-5 { animation: fade-up 0.42s ease both 0.45s; opacity: 0; }
+
+        .radar-arm {
+            transform-origin: 50% 50%;
+            animation: radar-sweep 3s linear infinite;
+        }
+        .live-dot {
+            animation: status-blink 2s ease-in-out infinite;
+        }
+
+        /* ── Select custom styling ──────────────────────────────── */
+        select {
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+        select:focus {
+            outline: none;
+            border-color: rgba(34,211,238,0.5);
+            box-shadow: 0 0 0 3px rgba(34,211,238,0.08);
+        }
+        select option {
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        /* ── Card hover ─────────────────────────────────────────── */
+        .report-row {
+            transition: background-color 0.15s ease, border-color 0.15s ease;
+        }
+        .report-row:hover {
+            background-color: rgba(248,250,252,0.03);
+            border-color: rgba(34,211,238,0.2);
+        }
+
+        /* ── Save button ─────────────────────────────────────────── */
+        .btn-save {
+            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            transition: filter 0.18s ease, transform 0.12s ease;
+        }
+        .btn-save:hover  { filter: brightness(1.12); transform: translateY(-1px); }
+        .btn-save:active { transform: translateY(0); filter: brightness(0.96); }
+        .btn-save:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            filter: none;
+        }
+
+        /* ── Section card ────────────────────────────────────────── */
+        .section-card {
+            background: rgba(15,23,42,0.85);
+            border: 1px solid rgba(30,58,95,0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        /* ── Toast ───────────────────────────────────────────────── */
+        #toast {
+            animation: toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        #toast.hiding {
+            animation: toast-out 0.25s ease forwards;
+        }
+
+        /* ── Scrollbar ───────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-950 min-h-screen text-white">
+
+    <!-- Ambient background glows -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px]
+                    bg-cyan-500/4 rounded-full blur-3xl -translate-y-1/4"></div>
+        <div class="absolute bottom-0 right-0 w-[350px] h-[350px]
+                    bg-blue-600/3 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         TOP NAV
+    ══════════════════════════════════════════════════════════════ -->
+    <header class="relative border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="landing.html" class="flex items-center gap-2.5 group">
+                <div class="w-7 h-7 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-md
+                            group-hover:brightness-110 transition"></div>
+                <span class="font-bold text-sm text-white tracking-wide">
+                    Game<span class="text-cyan-400">Radar</span>
+                    <span class="text-slate-500 font-normal">AI</span>
+                </span>
+            </a>
+
+            <!-- Right side — email pill -->
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800
+                             rounded-full px-3 py-1.5 text-xs text-slate-400">
+                    <span class="live-dot w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+                    <span id="nav-email" class="font-mono truncate max-w-[160px]">—</span>
+                </div>
+                <a href="unsubscribe.html"
+                   class="text-xs text-slate-500 hover:text-slate-300 transition">
+                    Manage plan
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════
+         MAIN CONTENT
+    ══════════════════════════════════════════════════════════════ -->
+    <main class="relative max-w-4xl mx-auto px-6 py-10">
+
+        <!-- Page title -->
+        <div class="mb-8 fade-up-1">
+            <p class="text-cyan-400 text-xs font-bold tracking-[0.18em] uppercase mb-1.5">
+                GameRadar AI
+            </p>
+            <h1 class="text-3xl font-bold text-white">Subscriber Hub</h1>
+            <p class="text-slate-400 text-sm mt-1.5">
+                Your data, your settings, your control.
+            </p>
+        </div>
+
+        <!-- ─────────────────────────────────────────────────────────────
+             GRID — top two cards side by side on md+
+        ───────────────────────────────────────────────────────────────── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+
+            <!-- ══ CARD 1 — CURRENT RADAR ══════════════════════════════ -->
+            <div class="section-card rounded-2xl p-6 fade-up-2">
+
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                            Current Radar
+                        </p>
+                        <p class="text-white text-base font-semibold">Active Region</p>
+                    </div>
+                    <!-- Animated radar icon -->
+                    <div class="w-11 h-11 rounded-full bg-slate-900 border border-slate-700/60
+                                flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 32 32" fill="none" class="w-7 h-7"
+                             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <!-- Outer rings -->
+                            <circle cx="16" cy="16" r="13" stroke="#1e3a5f"
+                                    stroke-width="0.8" fill="none" stroke-dasharray="3 2"/>
+                            <circle cx="16" cy="16" r="8.5" stroke="#1e3a5f"
+                                    stroke-width="1" fill="none"/>
+                            <!-- Sweep arm (animated) -->
+                            <line class="radar-arm" x1="16" y1="16" x2="28" y2="8"
+                                  stroke="rgba(34,211,238,0.6)" stroke-width="1.4"
+                                  stroke-linecap="round"/>
+                            <!-- Center dot -->
+                            <circle cx="16" cy="16" r="2.2"
+                                    fill="rgba(34,211,238,0.15)" stroke="#22d3ee" stroke-width="1.2"/>
+                            <!-- Active blip -->
+                            <circle id="radar-blip" cx="24" cy="9" r="2.2"
+                                    fill="#22d3ee" opacity="0.85"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Region display -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <span id="region-flag" class="text-3xl leading-none" role="img" aria-label="Region flag">🌐</span>
+                        <div>
+                            <p id="region-name"
+                               class="text-white text-lg font-bold leading-tight">—</p>
+                            <p id="region-sub"
+                               class="text-slate-500 text-xs mt-0.5">Rookie Plan · Active</p>
+                        </div>
+                        <div class="ml-auto">
+                            <span class="inline-flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/25
+                                         rounded-full px-2.5 py-1 text-xs font-semibold text-cyan-400">
+                                <span class="live-dot w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                                Live
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan meta -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950/60 border border-slate-800/60 rounded-lg px-3.5 py-3">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Plan</p>
+                        <p class="text-white text-sm font-semibold">Rookie</p>
+                    </div>
+                    <div class="bg-slate-950/60 border border-slate-800/60 rounded-lg px-3.5 py-3">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-wider font-semibold mb-0.5">
+                            Next report
+                        </p>
+                        <p id="next-report-date" class="text-cyan-400 text-sm font-semibold">Monday</p>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /Current Radar -->
+
+            <!-- ══ CARD 2 — PREFERENCES ═════════════════════════════════ -->
+            <div class="section-card rounded-2xl p-6 fade-up-3" id="preferences-card">
+
+                <div class="mb-5">
+                    <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Preferences
+                    </p>
+                    <p class="text-white text-base font-semibold">Scouting Settings</p>
+                </div>
+
+                <form id="preferences-form" onsubmit="savePreferences(event)" novalidate>
+
+                    <!-- Scouting Region -->
+                    <div class="mb-4">
+                        <label for="pref-region"
+                               class="block text-slate-400 text-xs font-semibold uppercase
+                                      tracking-wider mb-2">
+                            Scouting Region
+                        </label>
+                        <div class="relative">
+                            <span id="region-flag-sel"
+                                  class="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none"
+                                  aria-hidden="true">🌐</span>
+                            <select id="pref-region"
+                                    class="w-full bg-slate-950 border border-slate-700/70
+                                           text-white text-sm rounded-xl
+                                           pl-10 pr-10 py-3
+                                           hover:border-slate-600 transition"
+                                    onchange="onRegionChange(this.value)">
+                                <option value="Korea LCK">🇰🇷  Korea LCK</option>
+                                <option value="China LPL">🇨🇳  China LPL</option>
+                                <option value="India">🇮🇳  India</option>
+                                <option value="Japan LJL">🇯🇵  Japan LJL</option>
+                                <option value="Vietnam VCS">🇻🇳  Vietnam VCS</option>
+                                <option value="Asia Pacific">🌏  Asia Pacific</option>
+                                <option value="Global">🌐  Global</option>
+                            </select>
+                        </div>
+                        <p class="text-slate-600 text-xs mt-1.5 pl-1">
+                            Determines which regional rankings you receive.
+                        </p>
+                    </div>
+
+                    <!-- Report Language -->
+                    <div class="mb-6">
+                        <label for="pref-lang"
+                               class="block text-slate-400 text-xs font-semibold uppercase
+                                      tracking-wider mb-2">
+                            Report Language
+                        </label>
+                        <select id="pref-lang"
+                                class="w-full bg-slate-950 border border-slate-700/70
+                                       text-white text-sm rounded-xl
+                                       px-4 py-3
+                                       hover:border-slate-600 transition">
+                            <option value="en">🇺🇸  English</option>
+                            <option value="es">🇪🇸  Spanish</option>
+                            <option value="pt">🇧🇷  Portuguese</option>
+                            <option value="ko">🇰🇷  Korean</option>
+                            <option value="zh">🇨🇳  Chinese (Simplified)</option>
+                            <option value="ja">🇯🇵  Japanese</option>
+                            <option value="vi">🇻🇳  Vietnamese</option>
+                        </select>
+                        <p class="text-slate-600 text-xs mt-1.5 pl-1">
+                            Applies to the report PDF and email body.
+                        </p>
+                    </div>
+
+                    <!-- Save button -->
+                    <button type="submit" id="save-btn"
+                            class="btn-save w-full rounded-xl py-3 text-sm font-bold
+                                   text-white tracking-wide">
+                        Save Preferences
+                    </button>
+
+                </form>
+
+            </div>
+            <!-- /Preferences -->
+
+        </div>
+        <!-- /Top grid -->
+
+        <!-- ══ CARD 3 — REPORT ARCHIVE ═══════════════════════════════════ -->
+        <div class="section-card rounded-2xl p-6 fade-up-4">
+
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">
+                        Report Archive
+                    </p>
+                    <p class="text-white text-base font-semibold">Last 4 Weekly Reports</p>
+                </div>
+                <span class="text-slate-600 text-xs">Rookie Plan</span>
+            </div>
+
+            <ul id="report-list" class="space-y-2.5" role="list" aria-label="Recent reports">
+                <!-- Populated by JS -->
+            </ul>
+
+            <!-- Empty state (hidden by default) -->
+            <div id="archive-empty"
+                 class="hidden text-center py-10 text-slate-600 text-sm">
+                <p class="text-3xl mb-3">📭</p>
+                <p>No reports delivered yet.</p>
+                <p class="text-xs mt-1">Your first report arrives next Monday.</p>
+            </div>
+
+        </div>
+        <!-- /Archive -->
+
+        <!-- ── Danger zone — unsubscribe link ───────────────────────── -->
+        <div class="fade-up-5 mt-8 text-center">
+            <p class="text-slate-600 text-xs">
+                Need to cancel?
+                <a href="unsubscribe.html"
+                   class="text-slate-500 hover:text-slate-300 underline underline-offset-2 transition ml-1">
+                    Manage or cancel subscription →
+                </a>
+            </p>
+        </div>
+
+    </main>
+
+    <!-- ══════════════════════════════════════════════════════════
+         TOAST NOTIFICATION
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="toast-wrapper"
+         class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+         aria-live="polite" aria-atomic="true">
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         JAVASCRIPT
+    ══════════════════════════════════════════════════════════════ -->
+    <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    var HUB_API_BASE = 'http://localhost:8000';
+
+    // Region metadata: flag emoji + label per canonical region_plan
+    var REGION_META = {
+        'Korea LCK':   { flag: '🇰🇷', label: 'Korea LCK',   sub: 'League of Legends · LCK' },
+        'China LPL':   { flag: '🇨🇳', label: 'China LPL',   sub: 'League of Legends · LPL' },
+        'India':       { flag: '🇮🇳', label: 'India',        sub: 'TEC · Regional Circuit' },
+        'Japan LJL':   { flag: '🇯🇵', label: 'Japan LJL',    sub: 'League of Legends · LJL' },
+        'Vietnam VCS': { flag: '🇻🇳', label: 'Vietnam VCS',  sub: 'League of Legends · VCS' },
+        'Asia Pacific':{ flag: '🌏', label: 'Asia Pacific',  sub: 'Multi-region' },
+        'Global':      { flag: '🌐', label: 'Global',         sub: 'All regions combined' },
+    };
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function getParam(name) {
+        return new URLSearchParams(window.location.search).get(name) || '';
+    }
+
+    function nextMonday() {
+        var d = new Date();
+        var day = d.getDay();
+        var diff = (day === 0) ? 1 : (8 - day);
+        d.setDate(d.getDate() + diff);
+        return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    // ── Region flag helper ────────────────────────────────────────────────────
+    function flagForRegion(region) {
+        var meta = REGION_META[region] || REGION_META['Global'];
+        return meta.flag;
+    }
+
+    function onRegionChange(value) {
+        var flag = flagForRegion(value);
+        document.getElementById('region-flag-sel').textContent = flag;
+        markDirty();
+    }
+
+    // ── Dirty state — enables Save button only on change ─────────────────────
+    var _dirty = false;
+    function markDirty() {
+        _dirty = true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('pref-lang').addEventListener('change', markDirty);
+    });
+
+    // ── Bootstrap page from localStorage / URL params ────────────────────────
+    function initHub() {
+        var email      = getParam('email')      || localStorage.getItem('gr_rookie_email')      || '';
+        var region     = getParam('region')     || localStorage.getItem('gr_rookie_region')     || 'Global';
+        var lang       = localStorage.getItem('gr_pref_lang')   || 'en';
+
+        // Normalise region casing
+        var regionNorm = region.trim();
+
+        // Nav email pill
+        if (email) {
+            document.getElementById('nav-email').textContent = email;
+        }
+
+        // ── Current Radar ─────────────────────────────────────────────────
+        var meta = REGION_META[regionNorm] || REGION_META['Global'];
+        document.getElementById('region-flag').textContent  = meta.flag;
+        document.getElementById('region-name').textContent  = meta.label;
+        document.getElementById('region-sub').textContent   = meta.sub;
+        document.getElementById('next-report-date').textContent = nextMonday();
+
+        // ── Preferences selectors ─────────────────────────────────────────
+        var regionSel = document.getElementById('pref-region');
+        for (var i = 0; i < regionSel.options.length; i++) {
+            if (regionSel.options[i].value === regionNorm) {
+                regionSel.selectedIndex = i;
+                break;
+            }
+        }
+        document.getElementById('region-flag-sel').textContent = meta.flag;
+
+        var langSel = document.getElementById('pref-lang');
+        for (var j = 0; j < langSel.options.length; j++) {
+            if (langSel.options[j].value === lang) {
+                langSel.selectedIndex = j;
+                break;
+            }
+        }
+
+        // ── Archive ───────────────────────────────────────────────────────
+        renderArchive(regionNorm);
+    }
+
+    // ── Report archive renderer ───────────────────────────────────────────────
+    function renderArchive(region) {
+        var meta   = REGION_META[region] || REGION_META['Global'];
+        var flag   = meta.flag;
+        var label  = meta.label;
+
+        // Generate the last 4 Mondays (most recent first)
+        var mondays = [];
+        var d = new Date();
+        // Walk back to last Monday
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        for (var i = 0; i < 4; i++) {
+            mondays.push(new Date(d));
+            d.setDate(d.getDate() - 7);
+        }
+
+        // Determine which report is "delivered" (past) vs pending
+        var now = new Date();
+        var list = document.getElementById('report-list');
+        list.innerHTML = '';
+
+        mondays.forEach(function (date, idx) {
+            var isPast     = date <= now;
+            var monthYear  = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            var slug       = label.toLowerCase().replace(/\s+/g, '_');
+            var filename   = slug + '_Report_' + date.toISOString().slice(0,7) + '.pdf';
+
+            var li = document.createElement('li');
+            li.className = 'report-row flex items-center gap-4 border border-slate-800/50 ' +
+                           'rounded-xl px-4 py-3.5 cursor-default';
+
+            // Status indicator
+            var statusDot = isPast
+                ? '<span class="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" title="Delivered"></span>'
+                : '<span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0" title="Upcoming"></span>';
+
+            // Badge
+            var badge = isPast
+                ? '<span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 ' +
+                  'rounded-full px-2 py-0.5 tracking-wide">DELIVERED</span>'
+                : '<span class="text-[10px] font-bold text-slate-500 bg-slate-800/60 border border-slate-700/50 ' +
+                  'rounded-full px-2 py-0.5 tracking-wide">UPCOMING</span>';
+
+            // Download link — only for delivered reports
+            var action = isPast
+                ? '<a href="' + encodeURI('/reports/' + filename) + '" ' +
+                  'download="' + filename + '" ' +
+                  'class="flex-shrink-0 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 ' +
+                  'border border-slate-700/40 hover:border-cyan-500/30 transition group" ' +
+                  'title="Download PDF" aria-label="Download ' + monthYear + ' report">' +
+                  '<svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400 transition" ' +
+                  'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+                  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                  '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>' +
+                  '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
+                  '</svg></a>'
+                : '<div class="flex-shrink-0 p-2 rounded-lg bg-slate-900/60 border border-slate-800/30" ' +
+                  'aria-hidden="true">' +
+                  '<svg class="w-3.5 h-3.5 text-slate-700" viewBox="0 0 24 24" fill="none" ' +
+                  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' +
+                  '</svg></div>';
+
+            li.innerHTML =
+                statusDot +
+                '<span class="text-xl leading-none flex-shrink-0" role="img" aria-hidden="true">' + flag + '</span>' +
+                '<div class="flex-1 min-w-0">' +
+                  '<p class="text-white text-sm font-semibold truncate">' + label + ' Rookie Report</p>' +
+                  '<p class="text-slate-500 text-xs mt-0.5">' + monthYear + '</p>' +
+                '</div>' +
+                badge +
+                action;
+
+            list.appendChild(li);
+        });
+    }
+
+    // ── Save Preferences ──────────────────────────────────────────────────────
+    function savePreferences(e) {
+        e.preventDefault();
+
+        var region = document.getElementById('pref-region').value;
+        var lang   = document.getElementById('pref-lang').value;
+
+        // Persist locally
+        localStorage.setItem('gr_rookie_region', region);
+        localStorage.setItem('gr_pref_lang',     lang);
+
+        // Update Current Radar card live
+        var meta = REGION_META[region] || REGION_META['Global'];
+        document.getElementById('region-flag').textContent = meta.flag;
+        document.getElementById('region-name').textContent = meta.label;
+        document.getElementById('region-sub').textContent  = meta.sub;
+        renderArchive(region);
+
+        // Disable button briefly (prevent double-submit)
+        var btn = document.getElementById('save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saved ✓';
+        setTimeout(function () {
+            btn.disabled = false;
+            btn.textContent = 'Save Preferences';
+        }, 2000);
+
+        _dirty = false;
+
+        // Fire toast
+        showToast(
+            '✓ Changes will be applied to your next weekly report.',
+            'success'
+        );
+
+        // Optional: POST to API to persist server-side
+        var email = localStorage.getItem('gr_rookie_email') || '';
+        if (email) {
+            fetch(HUB_API_BASE + '/subscriber/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, region_plan: region, language: lang }),
+            }).catch(function () {
+                // Silent fail — localStorage is the source of truth for now
+            });
+        }
+    }
+
+    // ── Toast system ──────────────────────────────────────────────────────────
+    var _toastTimer = null;
+
+    function showToast(message, type) {
+        var wrapper = document.getElementById('toast-wrapper');
+        wrapper.innerHTML = '';
+
+        var borderColor = type === 'success'
+            ? 'border-cyan-500/40'
+            : 'border-amber-500/40';
+        var iconColor = type === 'success' ? 'text-cyan-400' : 'text-amber-400';
+        var icon = type === 'success'
+            ? '<polyline points="20 6 9 17 4 12"/>'
+            : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+
+        var toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'pointer-events-auto flex items-center gap-3 ' +
+            'bg-slate-900 border ' + borderColor + ' ' +
+            'rounded-2xl shadow-2xl px-5 py-3.5 min-w-[280px] max-w-[400px]';
+
+        toast.innerHTML =
+            '<span class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 ' +
+            'flex items-center justify-center">' +
+            '<svg class="w-3.5 h-3.5 ' + iconColor + '" viewBox="0 0 24 24" fill="none" ' +
+            'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" ' +
+            'stroke-linejoin="round" aria-hidden="true"><' + icon + '></svg></span>' +
+            '<p class="text-slate-200 text-sm leading-snug flex-1">' + message + '</p>' +
+            '<button onclick="dismissToast()" ' +
+            'class="flex-shrink-0 text-slate-600 hover:text-slate-300 transition ml-1 ' +
+            'text-xs leading-none" aria-label="Dismiss">' +
+            '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>' +
+            '<line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+
+        wrapper.appendChild(toast);
+
+        if (_toastTimer) clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(dismissToast, 5000);
+    }
+
+    function dismissToast() {
+        var toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.classList.add('hiding');
+        setTimeout(function () {
+            var w = document.getElementById('toast-wrapper');
+            if (w) w.innerHTML = '';
+        }, 260);
+    }
+
+    // ── Warn on unsaved changes ───────────────────────────────────────────────
+    window.addEventListener('beforeunload', function (e) {
+        if (_dirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', initHub);
+    </script>
+
+</body>
+</html>

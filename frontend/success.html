@@ -100,9 +100,9 @@
             <a href="landing.html" class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-semibold text-sm transition">
                 ← Back to Home
             </a>
-            <a href="https://discord.gg/gameradar" target="_blank" rel="noopener noreferrer"
+            <a id="hub-link" href="hub.html"
                class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-6 py-3 rounded-xl font-semibold text-sm transition">
-                Join our Discord
+                Go to Subscriber Hub →
             </a>
         </div>
 
@@ -139,10 +139,16 @@
         var region    = (localStorage.getItem('gr_rookie_region')    || '').trim().toLowerCase();
         var messenger = (localStorage.getItem('gr_rookie_messenger') || '').trim();
 
-        // Clear after reading (data no longer needed)
-        localStorage.removeItem('gr_rookie_email');
-        localStorage.removeItem('gr_rookie_region');
-        localStorage.removeItem('gr_rookie_messenger');
+        // Re-persist region (hub.html will read it)
+        if (email)  localStorage.setItem('gr_rookie_email',  email);
+        if (region) localStorage.setItem('gr_rookie_region', region);
+
+        // Wire hub link with URL params for immediate deep-link
+        var hubLink = document.getElementById('hub-link');
+        if (hubLink && email) {
+            hubLink.href = 'hub.html?email=' + encodeURIComponent(email) +
+                           (region ? '&region=' + encodeURIComponent(region) : '');
+        }
 
         // ── Populate display fields ───────────────────────────────────────────
         if (email) {
