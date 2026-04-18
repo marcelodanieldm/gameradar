@@ -192,6 +192,10 @@ Base URL: `http://127.0.0.1:8000`
 | `GET` | `/export/players` | Flat player array — **use this in Power BI** |
 | `GET` | `/export/players?region=Korea&min_score=5&limit=20` | Filtered |
 | `GET` | `/export/schema` | Column documentation |
+| `POST` | `/subscriber/auth` | Subscriber email verification → HMAC session token |
+| `POST` | `/subscriber/preferences` | Update delivery region + language (Bearer token required) |
+| `POST` | `/stripe/portal-session` | Generate Stripe billing portal URL (server-side only) |
+| `POST` | `/stripe/webhook` | Stripe event handler (subscription cancellation) |
 
 ### Power BI Connection
 
@@ -251,6 +255,14 @@ Alerts: WhatsApp · Telegram · Email
 | `RAZORPAY_KEY_ID` | Optional | Razorpay payments (India) |
 | `RAZORPAY_KEY_SECRET` | Optional | Razorpay secret |
 | `STRIPE_SECRET_KEY` | Optional | Stripe payments (global) |
+| `STRIPE_WEBHOOK_SECRET` | Optional | Stripe webhook signature verification |
+| `HUB_TOKEN_SECRET` | Optional | HMAC secret for Hub session tokens (auto-generated if absent) |
+| `SMTP_HOST` | Optional | Mail server for report delivery (default: smtp.gmail.com) |
+| `SMTP_PORT` | Optional | SMTP port (default: 587) |
+| `SMTP_USER` | Optional | Sender email login |
+| `SMTP_PASSWORD` | Optional | Sender email password / app-password |
+| `SMTP_FROM` | Optional | Display name + address (defaults to SMTP_USER) |
+| `PORTAL_RETURN_URL` | Optional | Stripe billing portal return URL (default: http://localhost:8000) |
 
 ---
 
@@ -514,5 +526,159 @@ Repository → Actions → "Bronze Ingestion — Asia Full Pipeline" → Run wor
 
 ---
 
+### v0.9 — Subscriber Lifecycle & Rookie Report Delivery (Sprint 7)
+`f4d6c5c` · `cae2a37` · `ddf9e72` · `dc56d6e`
+
+#### Cancellation lifecycle (`f4d6c5c`)
+- `subscriber_sync.py` — `handle_cancellations()`: reads `cancellations_log.csv` written by webhook → marks matching rows `Inactive` in `subscribers.csv` → archives to `churn_logs.csv`
+- `delivery.py` — `load_subscribers()` skips `Inactive` rows; churned users never receive a report
+- `api_powerbi.py` — `POST /stripe/webhook` handles `customer.subscription.deleted`: resolves customer email via Stripe API, appends to `cancellations_log.csv`
+
+#### Cancellation email (`cae2a37`)
+- `templates/cancellation_email.html` — Jinja2 dark-mode email: access expiry date, retention offer, resubscribe CTA
+- `_send_cancellation_email()` in `api_powerbi.py` — fires on webhook event; silent no-op if SMTP is unconfigured
+
+#### Subscriber Hub v1 (`ddf9e72`)
+- `frontend/hub.html` — full single-page subscriber panel (no framework, zero dependencies beyond Tailwind CDN):
+  - **Current Radar card** — animated SVG radar sweep, region flag, plan meta, next report date
+  - **Preferences card** — scouting region selector + report language selector
+  - **Report Archive** — last 4 Mondays, download links for delivered PDFs, upcoming badges
+  - Toast notification system with animation
+  - `success.html` — post-payment success page now links to the Hub
+
+#### Hub auth, preferences & Stripe billing portal (`dc56d6e`)
+- `api_powerbi.py` new endpoints:
+  - `POST /subscriber/auth` — validates email in `subscribers.csv` (Active only), returns HMAC-SHA256 signed token. Returns `404` for both not-found and inactive to prevent email enumeration (OWASP A07)
+  - `POST /subscriber/preferences` — `Authorization: Bearer <token>` required; validates token + region/language whitelists; persists preferences atomically
+  - `POST /stripe/portal-session` — server-side Stripe Customer Portal session; customer_id is **never** sent to the browser
+- `_make_hub_token()` / `_verify_hub_token()` — HMAC-SHA256, TTL 86 400 s, `hmac.compare_digest` (OWASP A02)
+- `_csv_safe()` — strips formula-injection characters on every write (OWASP A03)
+- `hub.html` JS rewrite: `sessionStorage`-based auth (cleared on tab close), `submitAuth()`, `savePreferences()` with `Authorization: Bearer` header, `doBillingPortal()`, `renderHub()`, auth-gate overlay with fade transition
+
+---
+
+### v1.0 — Data Integrity & Regional Preference Delivery (Sprint 8)
+`c768eff`
+
+- **`subscriber_sync.py`** — schema extended:
+  - New columns `active_region` and `target_language` added to `_CSV_FIELDNAMES`
+  - `append_subscribers()` stamps `active_region = region_plan` and `target_language = "en"` on every new subscriber
+  - `handle_cancellations()` back-fills both new columns for legacy rows
+  - New public function **`update_preferences(email, active_region, target_language, csv_path, dry_run)`** — atomic full-rewrite under `_csv_write_lock`; validates region/language against canonical whitelists; preserves `region_plan` (billing key) untouched
+- **`delivery.py`** — data-integrity rule:
+  - `Subscriber` NamedTuple gains `target_language: str`
+  - `load_subscribers()` reads `active_region` column — if non-empty it **overrides** `region_plan` as the effective delivery region (prevents sending an India report to someone who switched to Korea LCK in the Hub); override is logged at INFO for audit
+  - Language resolution chain: `target_language` → `language` (legacy column) → `"en"`
+- **`api_powerbi.py`** — `_update_subscriber_preferences()` now writes to `active_region` + `target_language` instead of `region_plan` + `language`, preserving the immutable Stripe subscription region
+
+> **Integrity guarantee:** `active_region` is the sole source of truth for delivery; `region_plan` is the immutable billing key. They can differ after a Hub preference update.
+
+---
+
+### v1.1 — Hub Micro-Data Widgets (Sprint 8 continued)
+`e29012e`
+
+Three intelligence widgets added below the Preferences card in `frontend/hub.html`:
+
+#### Market Heatmap
+- Animated progress bar (CSS `cubic-bezier` transition, color-coded: green = High / amber = Medium / slate = Low)
+- Per-region stat counters: tournaments detected + matches tracked this week
+- Data sourced from `REGION_HEATMAP` object; auto-refreshes when the user changes region (both on save and on optimistic UI update)
+
+#### Next Neural Report Countdown
+- Live 4-cell timer: **Days · Hrs · Min · Sec** (seconds highlighted in cyan)
+- Target: next Monday at 08:00 UTC; handles same-day edge case (delivery already happened vs. still pending)
+- `startCountdown()` uses `setInterval(1000)` with previous interval cleanup
+
+#### Quick API Key
+- Session token displayed masked (`abc123···············ef90`) with eye-toggle reveal
+- **Copy** button: `navigator.clipboard.writeText` + `document.execCommand` fallback for HTTP
+- **API Docs** button: opens `{HUB_API_BASE}/docs` (FastAPI Swagger UI) in a new tab
+
+---
+
+### v1.2 — Hub Login / Logout (Sprint 8 continued)
+`181a636`
+
+- **Logout button** added to the sticky nav (right side, after "Manage plan" divider):
+  - Mobile: icon only. `sm+`: icon + "Sign out" label. Turns red on hover.
+- **`doLogout()`** function:
+  1. Sets `_dirty = false` to suppress the `beforeunload` unsaved-changes dialog
+  2. Stops the countdown `setInterval`
+  3. Calls `_clearSession()` — wipes `sessionStorage` and in-memory `_session`
+  4. Resets nav email pill to `—`
+  5. Clears the login form input and hides any previous error
+  6. Restores the "Access Hub →" button text/state
+  7. Shows toast: `"✓ Signed out. See you next Monday."`
+  8. Calls `showAuthGate()` with fade transition
+- The full login → use → logout → re-login cycle is now complete
+
+---
+
+## Subscriber Hub — How It Works
+
+```
+Browser                          FastAPI (:8000)               subscribers.csv
+  │                                     │                              │
+  │  POST /subscriber/auth {email}       │                              │
+  │ ──────────────────────────────────► │  lookup Active email ───────►│
+  │ ◄──────────────────────────────────  │  return HMAC token           │
+  │  store token in sessionStorage       │                              │
+  │                                     │                              │
+  │  POST /subscriber/preferences        │                              │
+  │  Authorization: Bearer <token>       │                              │
+  │ ──────────────────────────────────► │  verify token                │
+  │                                     │  write active_region ───────►│
+  │                                     │  write target_language ─────►│
+  │ ◄──────────────────────────────────  │  200 OK                      │
+  │                                     │                              │
+  │  [Monday 08:00 UTC]                 │           delivery.py        │
+  │                                     │   load_subscribers() ───────►│
+  │                                     │   effective_region =         │
+  │                                     │     active_region ?? region_plan
+  │                                     │   send correct PDF ─────────►│
+```
+
+### Subscriber Hub API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/subscriber/auth` | — | Email lookup → HMAC token (TTL 24 h) |
+| `POST` | `/subscriber/preferences` | Bearer token | Update `active_region` + `target_language` |
+| `POST` | `/stripe/portal-session` | — | Server-side Stripe billing portal URL |
+| `POST` | `/stripe/webhook` | Stripe signature | Handle `customer.subscription.deleted` |
+
+### Delivery Pipeline (every Monday)
+
+```powershell
+# 1. Sync new Stripe subscribers
+.venv\Scripts\python.exe subscriber_sync.py
+
+# 2. Deliver reports (effective region = active_region ?? region_plan)
+.venv\Scripts\python.exe delivery.py
+
+# Dry run (no emails sent, no files modified)
+.venv\Scripts\python.exe delivery.py --dry-run
+
+# Single region
+.venv\Scripts\python.exe delivery.py --region "Korea LCK"
+```
+
+### subscribers.csv Schema
+
+| Column | Description |
+|---|---|
+| `email` | Subscriber email (lowercase) |
+| `region_plan` | Original Stripe subscription region — **immutable billing key** |
+| `active_region` | Current delivery region (may differ after Hub preference update) |
+| `target_language` | Report language ISO 639-1 code (en / es / pt / ko / zh / ja / vi) |
+| `messenger` | WhatsApp / Telegram handle (optional) |
+| `plan` | Plan name (rookie) |
+| `source` | stripe\_checkout |
+| `subscribed_at` | ISO 8601 timestamp |
+| `status` | Active \| Inactive |
+
+---
+
 *Repository: https://github.com/marcelodanieldm/gameradar*  
-*Last updated: April 2026 · HEAD `95078a3`*
+*Last updated: April 17, 2026 · HEAD `181a636`*
