@@ -5,10 +5,10 @@
 > **Stack:** Python 3.11 · FastAPI · Jinja2 · WeasyPrint · Stripe · pure-HTML frontend · `subscribers.csv` as data store. No Supabase. No Vercel. No Node.js. Runs 100 % locally.
 
 ```
-bronze/      ←  raw JSON scraped by GitHub Actions (11 sources)
+bronze/      ←  raw JSON scraped by ingestion wrappers and GitHub Actions
 silver/      ←  normalised, translated, scored  (bronze_to_silver.py)
-reports/     ←  PDF scouting reports + delivery logs
-frontend/    ←  6 static HTML pages (no build step)
+reports/     ←  HTML/PDF scouting reports + delivery logs
+frontend/    ←  static HTML pages (no build step)
 templates/   ←  Jinja2 HTML/CSS email + report templates
 ```
 
@@ -18,8 +18,9 @@ templates/   ←  Jinja2 HTML/CSS email + report templates
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  GitHub Actions  (bronze_strategic.yml — every 23 h)                │
-│  ingest_bronze_targets.py  →  /bronze/<source>/YYYY-MM-DD.json      │
+│  GitHub Actions / local CLI                                          │
+│  ingest_bronze_targets.py wrapper → ingestion.ingest_bronze_targets  │
+│  writes /bronze/<source>/YYYY-MM-DD.json                             │
 └────────────────────────────┬─────────────────────────────────────────┘
                              │
                              ▼
@@ -36,8 +37,8 @@ templates/   ←  Jinja2 HTML/CSS email + report templates
               ▼                             ▼
 ┌─────────────────────────┐   ┌──────────────────────────────────────┐
 │  api_powerbi.py          │   │  generate_rookie_report.py           │
-│  FastAPI  :8000          │   │  Jinja2 + WeasyPrint → PDF           │
-│  /export/players → BI    │   │  reports/rookie_<region>_<date>.pdf  │
+│  FastAPI  :8000          │   │  Jinja2 + WeasyPrint / HTML preview  │
+│  /export/players → BI    │   │  reports/rookie_<region>_<date>.*    │
 │  /subscriber/auth        │   └──────────────────────────────────────┘
 │  /subscriber/preferences │                  │
 │  /stripe/*               │                  │
@@ -105,7 +106,9 @@ cd frontend ; python -m http.server 3000
 
 ---
 
-## Data Sources (11 active)
+## Data Sources (12 active + Riot API fallback)
+
+12 packaged connectors plus Riot API fallback are wired in the current repository.
 
 | Source | Region | Tech | Notes |
 |---|---|---|---|
@@ -143,28 +146,30 @@ Score = (KDA_norm × 0.35) + (WR_norm × 0.45) + (MatchFreq_norm × 0.20) × Reg
 
 | File | Purpose |
 |---|---|
-| `ingest_bronze_targets.py` | Orchestrates all 11 scrapers → `/bronze/` |
+| `ingest_bronze_targets.py` | Compatibility wrapper for `ingestion.ingest_bronze_targets` |
 | `bronze_to_silver.py` | ETL: translate → score → deduplicate → `silver/silver_data.json` |
 | `data_sync.py` | Syncs and merges bronze sources into `master_rookie.json` |
-| `intelligence.py` | Advanced scoring: `rank_players()` used by report generator |
+| `etl/intelligence.py` | Advanced scoring and translation helpers used by the report generator |
 | `generate_rookie_report.py` | Jinja2 + WeasyPrint → 2-page A4 PDF scouting report |
 | `delivery.py` | Weekly pipeline: load subscribers → generate PDF → SMTP batch send |
 | `subscriber_sync.py` | CSV read/write with threading.Lock(); `update_preferences()`, `append_subscribers()` |
 | `api_powerbi.py` | FastAPI on :8000 — Power BI bridge + subscriber API + Stripe webhooks |
 | `welcome_email.py` | Sends Jinja2 HTML welcome email on new subscriber registration |
-| `scrapers.py` | Base scrapers (OP.GG, Liquipedia) |
-| `AsiaAdapters.py` | 8 async HTTP adapters (ZETA, DetonatioN, Game-i, PentaQ, VRL, GosuGamers, Liquipedia, OP.GG) |
-| `StrategicAdapters.py` | `AdvancedHeaderRotator`, `ExponentialBackoffHandler`, `RegionProfile` |
-| `MultiRegionIngestor.py` | Military-grade multi-region orchestrator with circuit breakers |
-| `RegionalConnectors.py` | Region-specific connector wrappers |
-| `UniversalAggregator.py` | Enterprise aggregation layer |
-| `cnn_brasil_scraper.py` | Ninja scraper — Playwright + anti-detection |
-| `riot_api_client.py` | Riot Games API v5 client |
-| `proxy_rotator.py` | Rotating proxy system |
-| `free_proxy_fetcher.py` | Free proxy sources |
-| `country_detector.py` | Country ISO-2 detection from URLs / text |
-| `models.py` | Pydantic v2 models (PlayerProfile, Stats, Champion) |
-| `config.py` | Centralised configuration (pydantic-settings) |
+| `scraping/scrapers.py` | Base scrapers (OP.GG, Liquipedia) |
+| `scraping/asia_adapters.py` | Async regional adapters for JP, CN, IN, SEA, and Liquipedia |
+| `scraping/strategic_adapters.py` | `AdvancedHeaderRotator`, `ExponentialBackoffHandler`, `RegionProfile` |
+| `ingestion/multi_region_ingestor.py` | Multi-region orchestrator with fallbacks and circuit breakers |
+| `scraping/regional_connectors.py` | Region-specific connector wrappers |
+| `ingestion/universal_aggregator.py` | Aggregation layer with cache and fallback logic |
+| `scraping/cnn_brasil_scraper.py` | Ninja scraper — Playwright + anti-detection |
+| `scraping/riot_api_client.py` | Riot Games API client |
+| `scraping/proxy_rotator.py` | Rotating proxy system |
+| `scraping/free_proxy_fetcher.py` | Free proxy sources |
+| `core/country_detector.py` | Country ISO-2 detection from URLs / text |
+| `core/models.py` | Shared Pydantic models |
+| `core/config.py` | Centralised configuration (pydantic-settings) |
+| `scripts/run_all_scrapers.py` | Local orchestration entrypoint for the available scrapers |
+| `scripts/run_working_scrapers.py` | Reduced orchestration entrypoint for the stable subset |
 
 ### Templates
 
@@ -351,7 +356,7 @@ Power BI row fields: `Player_Name`, `Region`, `Calculated_Score`, `Translated_Ro
 ### Bronze Ingestion
 
 ```powershell
-# All 11 sources
+# All packaged sources
 .venv\Scripts\python.exe ingest_bronze_targets.py
 
 # Specific sources
@@ -422,20 +427,23 @@ Repository → Actions → "Bronze Ingestion — Asia Full Pipeline" → Run wor
 ## Tests
 
 ```powershell
-# Scraper diagnostics (connectivity for all 11 sources)
-.venv\Scripts\python.exe test_scrapers_diagnostico.py
+# Full pytest discovery
+.venv\Scripts\python.exe -m pytest
 
-# MultiRegion ingestor
-.venv\Scripts\python.exe test_multi_region_ingestor.py
+# Scraper diagnostics
+.venv\Scripts\python.exe tests\test_scrapers_diagnostico.py
 
 # Regional connectors
-.venv\Scripts\python.exe test_regional_connectors.py
+.venv\Scripts\python.exe tests\test_regional_connectors.py
 
 # Universal aggregator
-.venv\Scripts\python.exe test_universal_aggregator.py
+.venv\Scripts\python.exe tests\test_universal_aggregator.py
 
 # Ninja scraper
-.venv\Scripts\python.exe test_ninja_scraper.py
+.venv\Scripts\python.exe tests\test_ninja_scraper.py
+
+# Multi-region ingestor smoke coverage
+.venv\Scripts\python.exe -m pytest tests\test_multi_region_ingestor.py
 ```
 
 ---
@@ -468,7 +476,7 @@ Repository → Actions → "Bronze Ingestion — Asia Full Pipeline" → Run wor
 |---|---|
 | `RIOT_API_KEY` | Riot Developer Portal key (fallback scraper) |
 | `PROXY_URL` | Rotating proxy for China sources (PentaQ, Wanplus) |
-| `WANPLUS_API_KEY` | Wanplus API key |
+| `STEAM_API_KEY` | Steam API key for Dota-related ingestion |
 
 ### Minimum .env for local development
 
@@ -503,6 +511,7 @@ Cancellation: Stripe Customer Portal → auto-marks `Inactive` in `subscribers.c
 |---|---|
 | **Zero-framework frontend** | 6 plain HTML + Tailwind CDN pages — no Node.js, no build step |
 | **No database required** | `subscribers.csv` with threading.Lock() is the sole data store |
+| **Packaged Python layout** | `core/`, `scraping/`, `ingestion/`, `etl/`, `scripts/`, and `tests/` separate concerns cleanly |
 | **Region-adaptive delivery** | `active_region` overrides `region_plan` — subscribers switch region from Hub without losing billing data |
 | **Multilingual reports** | `target_language` (ISO 639-1) stored per subscriber; used by delivery pipeline |
 | **Stateless session** | Hub tokens in `sessionStorage` — cleared on tab close, never `localStorage` |
