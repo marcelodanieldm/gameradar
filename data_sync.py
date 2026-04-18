@@ -45,6 +45,9 @@ BRONZE_LOCAL_DIR  = pathlib.Path("bronze")
 GITHUB_API_BASE   = "https://api.github.com"
 GITHUB_RAW_BASE   = "https://raw.githubusercontent.com"
 
+# DoD #1 — connectivity: any single JSON download must complete in < 5 s
+DOWNLOAD_TIMEOUT_SEC = 5
+
 # Activity_Level weights (no consistency_score available)
 W_GAMES  = 0.60   # games_analyzed / 100  — main activity signal
 W_WR     = 0.25   # win_rate / 100
@@ -116,9 +119,17 @@ def _api_headers(token: str | None) -> dict[str, str]:
     return headers
 
 
-def _api_get(url: str, token: str | None) -> Any:
-    """GET from GitHub API with basic error handling."""
-    resp = requests.get(url, headers=_api_headers(token), timeout=20)
+def _api_get(url: str, token: str | None, timeout: int = DOWNLOAD_TIMEOUT_SEC) -> Any:
+    """GET from GitHub API with basic error handling and 5-second DoD timing."""
+    t0   = time.perf_counter()
+    resp = requests.get(url, headers=_api_headers(token), timeout=timeout)
+    elapsed = time.perf_counter() - t0
+    if elapsed > DOWNLOAD_TIMEOUT_SEC:
+        logger.warning(
+            f"DoD #1 BREACH: API call took {elapsed:.2f}s (limit {DOWNLOAD_TIMEOUT_SEC}s) — {url}"
+        )
+    else:
+        logger.debug(f"  GET {elapsed:.2f}s ← {url}")
     if resp.status_code == 403:
         raise RuntimeError(
             "GitHub API rate limit exceeded (60 req/h unauthenticated). "
@@ -149,9 +160,21 @@ def _download_file(file_entry: dict, token: str | None) -> list[dict]:
     """
     Download and decode a single bronze JSON file from the repository.
     Uses the raw download_url to avoid an extra API round-trip.
+    Enforces the DoD #1 connectivity SLA: download must complete in < 5 s.
     """
     raw_url = file_entry.get("download_url") or file_entry.get("url")
-    resp = requests.get(raw_url, headers=_api_headers(token), timeout=20)
+    t0   = time.perf_counter()
+    resp = requests.get(raw_url, headers=_api_headers(token), timeout=DOWNLOAD_TIMEOUT_SEC)
+    elapsed = time.perf_counter() - t0
+    if elapsed > DOWNLOAD_TIMEOUT_SEC:
+        logger.warning(
+            f"DoD #1 BREACH: download took {elapsed:.2f}s "
+            f"(limit {DOWNLOAD_TIMEOUT_SEC}s) — {file_entry.get('name', raw_url)}"
+        )
+    else:
+        logger.debug(
+            f"  Downloaded {file_entry.get('name', '?')} in {elapsed:.2f}s ✓"
+        )
     resp.raise_for_status()
 
     # The download_url returns raw bytes; the API url returns base64-encoded JSON

@@ -524,8 +524,23 @@ def generate(
         presentational_hints=True,
     )
 
-    size_kb = output_path.stat().st_size // 1024
-    logger.success(f"PDF generated: {output_path}  ({size_kb} KB)")
+    size_bytes = output_path.stat().st_size
+    size_kb    = size_bytes // 1024
+    size_mb    = size_bytes / 1_048_576
+
+    # DoD #3 — aesthetics: PDF must stay below 2 MB to avoid spam filters
+    _DOD_PDF_MAX_MB = 2.0
+    if size_mb > _DOD_PDF_MAX_MB:
+        logger.warning(
+            f"DoD #3 BREACH: PDF is {size_mb:.2f} MB "
+            f"(limit {_DOD_PDF_MAX_MB} MB) — {output_path}\n"
+            "  Tip: reduce image embeds or use font subsetting."
+        )
+    else:
+        logger.success(
+            f"PDF generated: {output_path}  ({size_kb} KB)  "
+            f"\u2713 DoD #3 <{_DOD_PDF_MAX_MB} MB"
+        )
 
     if auto_open:
         _open_pdf(output_path)
