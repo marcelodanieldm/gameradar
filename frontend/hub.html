@@ -229,6 +229,24 @@
                    class="text-xs text-slate-500 hover:text-slate-300 transition">
                     Manage plan
                 </a>
+                <!-- Divider -->
+                <span class="hidden sm:block w-px h-4 bg-slate-800" aria-hidden="true"></span>
+                <!-- Logout -->
+                <button onclick="doLogout()"
+                        class="flex items-center gap-1.5 text-xs text-slate-500
+                               hover:text-red-400 transition"
+                        title="Sign out of Subscriber Hub"
+                        aria-label="Sign out">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span class="hidden sm:inline">Sign out</span>
+                </button>
             </div>
         </div>
     </header>
@@ -1040,6 +1058,28 @@
 
     function openApiDocs() {
         window.open(HUB_API_BASE + '/docs', '_blank', 'noopener,noreferrer');
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+    function doLogout() {
+        // Suppress the "unsaved changes" warning — user is intentionally leaving
+        _dirty = false;
+        // Stop the live countdown timer
+        if (_countdownInterval) { clearInterval(_countdownInterval); _countdownInterval = null; }
+        // Wipe session tokens from memory + sessionStorage
+        _clearSession();
+        // Reset nav email pill
+        var navEl = document.getElementById('nav-email');
+        if (navEl) navEl.textContent = '—';
+        // Clear and reset the login form so it's clean for the next user
+        var inp = document.getElementById('auth-email');
+        if (inp) inp.value = '';
+        var errEl = document.getElementById('auth-error');
+        if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+        var authBtn = document.getElementById('auth-btn');
+        if (authBtn) { authBtn.disabled = false; authBtn.textContent = 'Access Hub →'; }
+        showToast('✓ Signed out. See you next Monday.', 'success');
+        showAuthGate();
     }
 
     // ── beforeunload guard ───────────────────────────────────────────────────────────
