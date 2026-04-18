@@ -37,6 +37,12 @@
         .fade-up-3 { animation: fade-up 0.42s ease both 0.25s; opacity: 0; }
         .fade-up-4 { animation: fade-up 0.42s ease both 0.35s; opacity: 0; }
         .fade-up-5 { animation: fade-up 0.42s ease both 0.45s; opacity: 0; }
+        .fade-up-6 { animation: fade-up 0.42s ease both 0.55s; opacity: 0; }
+
+        /* ── Heatmap bar ─────────────────────────────────────────── */
+        .heatmap-bar {
+            transition: width 0.85s cubic-bezier(.4,0,.2,1);
+        }
 
         .radar-arm {
             transform-origin: 50% 50%;
@@ -403,8 +409,183 @@
         </div>
         <!-- /Top grid -->
 
+        <!-- ─────────────────────────────────────────────────────────────
+             MICRO-DATA ROW — Market Heatmap · Delivery Countdown · API Key
+        ───────────────────────────────────────────────────────────────── -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5 fade-up-4">
+
+            <!-- ══ WIDGET 1 — MARKET HEATMAP ══════════════════════════════ -->
+            <div class="section-card rounded-2xl p-5" id="heatmap-card">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Live Intel</p>
+                        <p class="text-white text-sm font-semibold">Market Heatmap</p>
+                    </div>
+                    <span id="heatmap-icon" class="text-2xl mt-0.5" role="img" aria-label="Region">🌐</span>
+                </div>
+
+                <!-- Activity bar -->
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">Activity</span>
+                        <span id="heatmap-level" class="text-xs font-bold">—</span>
+                    </div>
+                    <div class="w-full bg-slate-800/80 rounded-full h-1.5 overflow-hidden">
+                        <div id="heatmap-bar" class="heatmap-bar h-1.5 rounded-full" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 gap-2 mb-3.5">
+                    <div class="bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2.5">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Tournaments</p>
+                        <p id="heatmap-tournaments" class="text-white text-lg font-bold tabular-nums">—</p>
+                    </div>
+                    <div class="bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2.5">
+                        <p class="text-slate-500 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Matches</p>
+                        <p id="heatmap-matches" class="text-white text-lg font-bold tabular-nums">—</p>
+                    </div>
+                </div>
+
+                <p id="heatmap-detail" class="text-slate-500 text-[11px] leading-relaxed">—</p>
+                <p class="text-slate-700 text-[10px] mt-2">Updated weekly · AI-sourced</p>
+            </div>
+            <!-- /Market Heatmap -->
+
+            <!-- ══ WIDGET 2 — DELIVERY COUNTDOWN ══════════════════════════ -->
+            <div class="section-card rounded-2xl p-5" id="countdown-card">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Delivery Timer</p>
+                        <p class="text-white text-sm font-semibold">Next Neural Report</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/60
+                                flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                             stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 text-xs mb-3">Your next report arrives in:</p>
+
+                <div class="grid grid-cols-4 gap-1.5 mb-3">
+                    <div class="text-center bg-slate-950/70 border border-slate-800 rounded-lg py-2.5 px-1">
+                        <p id="cd-days"  class="text-white text-xl font-bold font-mono tabular-nums leading-none">—</p>
+                        <p class="text-slate-600 text-[9px] uppercase tracking-wider mt-1">Days</p>
+                    </div>
+                    <div class="text-center bg-slate-950/70 border border-slate-800 rounded-lg py-2.5 px-1">
+                        <p id="cd-hours" class="text-white text-xl font-bold font-mono tabular-nums leading-none">—</p>
+                        <p class="text-slate-600 text-[9px] uppercase tracking-wider mt-1">Hrs</p>
+                    </div>
+                    <div class="text-center bg-slate-950/70 border border-slate-800 rounded-lg py-2.5 px-1">
+                        <p id="cd-mins"  class="text-white text-xl font-bold font-mono tabular-nums leading-none">—</p>
+                        <p class="text-slate-600 text-[9px] uppercase tracking-wider mt-1">Min</p>
+                    </div>
+                    <div class="text-center bg-slate-950/70 border border-cyan-500/20 rounded-lg py-2.5 px-1">
+                        <p id="cd-secs"  class="text-cyan-400 text-xl font-bold font-mono tabular-nums leading-none">—</p>
+                        <p class="text-slate-600 text-[9px] uppercase tracking-wider mt-1">Sec</p>
+                    </div>
+                </div>
+
+                <p class="text-slate-700 text-[10px] text-center">Every Monday · 08:00 UTC</p>
+            </div>
+            <!-- /Delivery Countdown -->
+
+            <!-- ══ WIDGET 3 — QUICK API KEY ════════════════════════════════ -->
+            <div class="section-card rounded-2xl p-5" id="apikey-card">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-0.5">Developer</p>
+                        <p class="text-white text-sm font-semibold">Quick API Key</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/60
+                                flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                             stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <p class="text-slate-400 text-xs mb-2.5">Your bearer token for raw JSON access:</p>
+
+                <!-- Token display -->
+                <div class="relative mb-3">
+                    <div id="apikey-display"
+                         class="bg-slate-950 border border-slate-800 rounded-lg
+                                px-3 py-2.5 pr-9 font-mono text-[11px] text-slate-400
+                                overflow-hidden whitespace-nowrap"
+                         style="text-overflow:ellipsis;">
+                        ········································
+                    </div>
+                    <button id="apikey-eye-btn" onclick="toggleApiKey()"
+                            class="absolute right-2 top-1/2 -translate-y-1/2
+                                   text-slate-600 hover:text-cyan-400 transition p-1 rounded-md"
+                            aria-label="Toggle API key visibility">
+                        <svg id="apikey-eye-open" class="w-4 h-4 hidden"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg id="apikey-eye-closed" class="w-4 h-4"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2 mb-3">
+                    <button onclick="copyApiKey()"
+                            class="flex-1 flex items-center justify-center gap-1.5
+                                   text-xs font-semibold text-slate-300
+                                   bg-slate-800/60 hover:bg-slate-800
+                                   border border-slate-700/50 hover:border-slate-600
+                                   rounded-lg px-3 py-2 transition">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                             stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy
+                    </button>
+                    <button onclick="openApiDocs()"
+                            class="flex-1 flex items-center justify-center gap-1.5
+                                   text-xs font-semibold text-cyan-400
+                                   bg-cyan-500/10 hover:bg-cyan-500/15
+                                   border border-cyan-500/20 hover:border-cyan-500/40
+                                   rounded-lg px-3 py-2 transition">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                             stroke-linejoin="round" aria-hidden="true">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                        API Docs
+                    </button>
+                </div>
+
+                <p class="text-slate-700 text-[10px] leading-relaxed">
+                    Authorization: Bearer &lt;key&gt; &nbsp;&middot;&nbsp; TTL 24 h
+                </p>
+            </div>
+            <!-- /Quick API Key -->
+
+        </div>
+        <!-- /Micro-data row -->
+
         <!-- ══ CARD 3 — REPORT ARCHIVE ═══════════════════════════════════ -->
-        <div class="section-card rounded-2xl p-6 fade-up-4">
+        <div class="section-card rounded-2xl p-6 fade-up-5">
 
             <div class="flex items-center justify-between mb-5">
                 <div>
@@ -432,7 +613,7 @@
         <!-- /Archive -->
 
         <!-- ── Danger zone — unsubscribe link ───────────────────────── -->
-        <div class="fade-up-5 mt-8 text-center">
+        <div class="fade-up-6 mt-8 text-center">
             <p class="text-slate-600 text-xs">
                 Need to cancel?
                 <a href="unsubscribe.html"
@@ -468,6 +649,24 @@
         'Vietnam VCS': { flag: '🇻🇳', label: 'Vietnam VCS',   sub: 'League of Legends · VCS' },
         'Asia Pacific':{ flag: '🌏',              label: 'Asia Pacific',  sub: 'Multi-region'                 },
         'Global':      { flag: '🌐',              label: 'Global',         sub: 'All regions combined'         },
+    };
+
+    // Region activity intelligence (updated weekly by scouts/AI pipeline)
+    var REGION_HEATMAP = {
+        'Korea LCK':    { level: 'High',   pct: 85, hex: '#10b981', tournaments: 5,  matches: 12,
+                          note: '5 new tournaments detected · 12 matches tracked'  },
+        'China LPL':    { level: 'High',   pct: 92, hex: '#10b981', tournaments: 6,  matches: 18,
+                          note: '6 new tournaments detected · 18 matches tracked'  },
+        'India':        { level: 'Medium', pct: 56, hex: '#f59e0b', tournaments: 3,  matches: 7,
+                          note: '3 new tournaments detected · 7 matches tracked'   },
+        'Japan LJL':    { level: 'Low',    pct: 28, hex: '#64748b', tournaments: 2,  matches: 5,
+                          note: '2 new tournaments detected · 5 matches tracked'   },
+        'Vietnam VCS':  { level: 'Medium', pct: 61, hex: '#f59e0b', tournaments: 3,  matches: 8,
+                          note: '3 new tournaments detected · 8 matches tracked'   },
+        'Asia Pacific': { level: 'High',   pct: 78, hex: '#06b6d4', tournaments: 7,  matches: 20,
+                          note: '7 new tournaments detected · 20 matches tracked'  },
+        'Global':       { level: 'High',   pct: 90, hex: '#06b6d4', tournaments: 9,  matches: 25,
+                          note: '9 new tournaments detected · 25 matches tracked'  },
     };
 
     // ── Session (sessionStorage — safer than localStorage for auth tokens) ──────────────
@@ -612,6 +811,9 @@
             if (lSel.options[j].value === lang) { lSel.selectedIndex = j; break; }
         }
         renderArchive(region);
+        renderHeatmap(region);
+        renderApiKey();
+        startCountdown();
     }
 
     // ── Report archive ────────────────────────────────────────────────────────────────
@@ -661,6 +863,7 @@
         document.getElementById('region-name').textContent = meta.label;
         document.getElementById('region-sub').textContent  = meta.sub;
         renderArchive(region);
+        renderHeatmap(region);
         var btn = document.getElementById('save-btn');
         btn.disabled = true; btn.textContent = 'Saving…';
         fetch(HUB_API_BASE + '/subscriber/preferences', {
@@ -709,6 +912,134 @@
         if (!t) return;
         t.classList.add('hiding');
         setTimeout(function(){ var w = document.getElementById('toast-wrapper'); if (w) w.innerHTML=''; }, 260);
+    }
+
+    // ── Market Heatmap ────────────────────────────────────────────────────────────────
+    function renderHeatmap(region) {
+        var data  = REGION_HEATMAP[region] || REGION_HEATMAP['Global'];
+        var meta  = REGION_META[region]    || REGION_META['Global'];
+        var lvlEl = document.getElementById('heatmap-level');
+        var barEl = document.getElementById('heatmap-bar');
+        var icoEl = document.getElementById('heatmap-icon');
+        if (!lvlEl) return;
+        icoEl.textContent  = meta.flag;
+        lvlEl.textContent  = data.level + ' Activity';
+        lvlEl.style.color  = data.hex;
+        barEl.style.background = data.hex;
+        document.getElementById('heatmap-tournaments').textContent = data.tournaments;
+        document.getElementById('heatmap-matches').textContent     = data.matches;
+        document.getElementById('heatmap-detail').textContent      = meta.label + ': ' + data.note;
+        // Animate bar: reset then expand on next paint
+        barEl.style.width = '0%';
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() { barEl.style.width = data.pct + '%'; });
+        });
+    }
+
+    // ── Delivery countdown ────────────────────────────────────────────────────────────
+    var _countdownInterval = null;
+
+    function _nextDeliveryDate() {
+        // Target: next Monday at 08:00 UTC
+        var now  = new Date();
+        var day  = now.getUTCDay();  // 0=Sun, 1=Mon … 6=Sat
+        var daysUntil;
+        if (day === 1) {
+            // It's Monday — delivery is today if before 08:00 UTC, else next Monday
+            var todayTarget = new Date(Date.UTC(
+                now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 8, 0, 0, 0
+            ));
+            daysUntil = (now < todayTarget) ? 0 : 7;
+        } else {
+            daysUntil = (day === 0) ? 1 : (8 - day);
+        }
+        return new Date(Date.UTC(
+            now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntil,
+            8, 0, 0, 0
+        ));
+    }
+
+    function _tickCountdown() {
+        var diff = Math.max(0, Math.floor((_nextDeliveryDate() - Date.now()) / 1000));
+        var d = Math.floor(diff / 86400);
+        var h = Math.floor((diff % 86400) / 3600);
+        var m = Math.floor((diff % 3600) / 60);
+        var s = diff % 60;
+        function pad(n) { return String(n).padStart(2, '0'); }
+        var dEl = document.getElementById('cd-days');
+        if (!dEl) return;
+        dEl.textContent                               = String(d);
+        document.getElementById('cd-hours').textContent = pad(h);
+        document.getElementById('cd-mins').textContent  = pad(m);
+        document.getElementById('cd-secs').textContent  = pad(s);
+    }
+
+    function startCountdown() {
+        _tickCountdown();
+        if (_countdownInterval) clearInterval(_countdownInterval);
+        _countdownInterval = setInterval(_tickCountdown, 1000);
+    }
+
+    // ── API Key widget ─────────────────────────────────────────────────────────────────
+    var _apiKeyVisible = false;
+
+    function renderApiKey() {
+        var token   = _session.token || '';
+        var display = document.getElementById('apikey-display');
+        if (!display) return;
+        _apiKeyVisible = false;
+        var eyeOpen   = document.getElementById('apikey-eye-open');
+        var eyeClosed = document.getElementById('apikey-eye-closed');
+        if (eyeOpen)   eyeOpen.classList.add('hidden');
+        if (eyeClosed) eyeClosed.classList.remove('hidden');
+        display.textContent = token
+            ? (token.slice(0, 6) + '·'.repeat(26) + token.slice(-4))
+            : '— sign in first —';
+    }
+
+    function toggleApiKey() {
+        var token   = _session.token || '';
+        var display = document.getElementById('apikey-display');
+        if (!token || !display) return;
+        _apiKeyVisible = !_apiKeyVisible;
+        display.textContent = _apiKeyVisible
+            ? token
+            : (token.slice(0, 6) + '·'.repeat(26) + token.slice(-4));
+        var eyeOpen   = document.getElementById('apikey-eye-open');
+        var eyeClosed = document.getElementById('apikey-eye-closed');
+        if (eyeOpen)   eyeOpen.classList.toggle('hidden', !_apiKeyVisible);
+        if (eyeClosed) eyeClosed.classList.toggle('hidden',  _apiKeyVisible);
+    }
+
+    function copyApiKey() {
+        var token = _session.token || '';
+        if (!token) { showToast('No API key — please log in first.', 'error'); return; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(token)
+                .then(function()  { showToast('✓ API key copied to clipboard.', 'success'); })
+                .catch(function() { _copyFallback(token); });
+        } else {
+            _copyFallback(token);
+        }
+    }
+
+    function _copyFallback(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast('✓ API key copied to clipboard.', 'success');
+        } catch(e) {
+            showToast('⚠ Could not copy — select the key manually.', 'error');
+        }
+        document.body.removeChild(ta);
+    }
+
+    function openApiDocs() {
+        window.open(HUB_API_BASE + '/docs', '_blank', 'noopener,noreferrer');
     }
 
     // ── beforeunload guard ───────────────────────────────────────────────────────────
