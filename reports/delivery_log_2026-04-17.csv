@@ -1,0 +1,7 @@
+timestamp,email,region_plan,pdf_filename,status,error
+2026-04-18T00:09:55.488406+00:00,analyst@esports.com,Korea LCK,KoreaLck_Report_2026-04.pdf,dry_run,
+2026-04-18T00:09:55.496006+00:00,scout@gamingio.com,Korea LCK,KoreaLck_Report_2026-04.pdf,dry_run,
+2026-04-18T00:09:55.501125+00:00,talent@agency.com,India,India_Report_2026-04.pdf,dry_run,
+2026-04-18T00:09:55.504131+00:00,recruiter@tec.gg,India,India_Report_2026-04.pdf,dry_run,
+2026-04-18T00:09:55.518104+00:00,director@lpl-watch.com,China LPL,ChinaLpl_Report_2026-04.pdf,dry_run,
+2026-04-18T00:09:55.537392+00:00,scouting@globalgg.net,Asia Pacific,AsiaPacific_Report_2026-04.pdf,dry_run,

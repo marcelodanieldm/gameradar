@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GameRadar AI — Rookie Report &middot; Asia Pacific &middot; April 2026</title>
+  <link rel="stylesheet" href="rookie_report.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 1 — Header · Summary Stats · Regional Top 6
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+
+    <div class="logo-block">
+      <div class="logo-icon">
+        <!-- Radar icon: concentric arcs + sweep arm + blip -->
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="13" stroke="#00d4ff" stroke-width="0.8"
+                  fill="none" stroke-dasharray="3 2" opacity="0.35"/>
+          <circle cx="16" cy="16" r="8.5" stroke="#00d4ff" stroke-width="1.1" fill="none"/>
+          <circle cx="16" cy="16" r="2.8" fill="rgba(0,212,255,0.35)"
+                  stroke="#00d4ff" stroke-width="1.4"/>
+          <!-- Sweep line -->
+          <line x1="16" y1="16" x2="28.5" y2="7.5"
+                stroke="#00d4ff" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+          <!-- Crosshair ticks -->
+          <line x1="16" y1="3"  x2="16" y2="6.5"  stroke="#00d4ff" stroke-width="0.9" opacity="0.45"/>
+          <line x1="16" y1="25.5" x2="16" y2="29" stroke="#00d4ff" stroke-width="0.9" opacity="0.45"/>
+          <line x1="3"  y1="16" x2="6.5" y2="16"  stroke="#00d4ff" stroke-width="0.9" opacity="0.45"/>
+          <line x1="25.5" y1="16" x2="29" y2="16" stroke="#00d4ff" stroke-width="0.9" opacity="0.45"/>
+          <!-- Blip -->
+          <circle cx="24" cy="9" r="2" fill="#00d4ff" opacity="0.95"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-brand">GAME<span class="logo-brand-accent">RADAR</span></div>
+        <div class="logo-sub">AI Scouting Intelligence</div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="report-type-label">Intelligence Report</div>
+      <div class="report-title-main">Rookie Scouting Report</div>
+      <span class="region-badge">Asia Pacific</span>
+    </div>
+
+    <div class="report-meta">
+      <div class="report-date-value">April 17, 2026</div>
+      <div class="report-period-value">April 2026</div>
+      <span class="plan-badge">Rookie Plan</span>
+    </div>
+
+  </header>
+
+  <!-- ── SUMMARY STATS ROW ─────────────────────────────────────────────── -->
+  <div class="stats-row">
+    <div class="stat-card s-cyan">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Players Ranked</div>
+    </div>
+    <div class="stat-card s-gold">
+      <div class="stat-value">6.22</div>
+      <div class="stat-label">Region Avg Score</div>
+    </div>
+    <div class="stat-card s-green">
+      <div class="stat-value">65.9%</div>
+      <div class="stat-label">Avg Win Rate</div>
+    </div>
+    <div class="stat-card s-purple">
+      <div class="stat-value">5.68</div>
+      <div class="stat-label">Avg KDA Ratio</div>
+    </div>
+  </div>
+
+  <!-- ── REGIONAL TOP TABLE ─────────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">
+      <span class="section-icon">&#9650;</span>
+      Regional Top 6
+      <span class="st-line"></span>
+    </h2>
+
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th class="col-rank">#</th>
+          <th class="col-player">Player</th>
+          <th class="col-role">Role</th>
+          <th class="col-kda">KDA</th>
+          <th class="col-wr">Win Rate</th>
+          <th class="col-games">Games</th>
+          <th class="col-score">GameRadar Score</th>
+          <th class="col-trend">&#177;</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr class="tr-medal">
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="medal gold">1</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">Chovy</div>
+            
+              <div class="player-real">정지훈</div>
+            
+            <div class="player-team">
+              Gen.G &middot; KR
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-mid">
+              Mid
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">7.30</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-high">
+              68.5%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">95</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                7.26
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-cyan"
+                     style="width: 73%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+        <tr class="tr-medal">
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="medal silver">2</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">Faker</div>
+            
+              <div class="player-real">이상혁</div>
+            
+            <div class="player-team">
+              T1 &middot; KR
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-mid">
+              Mid
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">6.10</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-high">
+              71.0%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">100</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                7.14
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-cyan"
+                     style="width: 71%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+        <tr class="tr-medal">
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="medal bronze">3</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">ShowMaker</div>
+            
+              <div class="player-real">허수</div>
+            
+            <div class="player-team">
+              DK &middot; KR
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-mid">
+              Mid
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">5.80</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-high">
+              65.2%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">85</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                6.50
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-cyan"
+                     style="width: 65%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+        <tr>
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="rank-num">4</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">Keria</div>
+            
+              <div class="player-real">류민석</div>
+            
+            <div class="player-team">
+              T1 &middot; KR
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-support">
+              Support
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">4.90</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-high">
+              70.1%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">78</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                6.41
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-cyan"
+                     style="width: 64%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+        <tr class="tr-odd">
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="rank-num">5</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">Knight</div>
+            
+              <div class="player-real">朱晓龙</div>
+            
+            <div class="player-team">
+              TES &middot; CN
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-中单">
+              中单
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">5.20</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-mid">
+              58.0%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">90</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                5.02
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-green"
+                     style="width: 50%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+        <tr>
+
+          <!-- Rank -->
+          <td class="col-rank">
+            
+              <span class="rank-num">6</span>
+            
+          </td>
+
+          <!-- Player -->
+          <td class="col-player">
+            <div class="player-name">JackeyLove</div>
+            
+              <div class="player-real">于佳伟</div>
+            
+            <div class="player-team">
+              iG战队 &middot; CN
+            </div>
+          </td>
+
+          <!-- Role -->
+          <td class="col-role">
+            <span class="role-badge role-射手">
+              射手
+            </span>
+          </td>
+
+          <!-- KDA -->
+          <td class="col-kda">4.80</td>
+
+          <!-- Win Rate -->
+          <td class="col-wr">
+            <span class="wr-value wr-mid">
+              62.5%
+            </span>
+          </td>
+
+          <!-- Games -->
+          <td class="col-games">80</td>
+
+          <!-- Score + progress bar -->
+          <td class="col-score">
+            <div class="score-cell">
+              <span class="score-num">
+                5.00
+              </span>
+              <div class="progress-track">
+                <div class="progress-fill fill-green"
+                     style="width: 50%;"></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trend -->
+          <td class="col-trend">
+            
+              <span class="trend-neutral">&mdash;</span>
+            
+          </td>
+
+        </tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── PAGE 1 FOOTER ──────────────────────────────────────────────────── -->
+  <div class="footer">
+    <div class="footer-brand"><span>GAME</span>RADAR AI</div>
+    <div class="footer-disclaimer">
+      Data sourced from Dak.gg &bull; OP.GG KR &bull; Wanplus &bull; TEC India.
+      Rookie Plan formula: Score&nbsp;=&nbsp;(KDA&times;0.35)+(WinRate&times;0.45)+(MatchFreq&times;0.20)
+      &bull; Regional multipliers: KR&times;1.2 &bull; IN&times;0.9
+    </div>
+    <div class="footer-page">Page 1 / 2</div>
+  </div>
+
+</div><!-- END PAGE 1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 2 — Rising Stars · Market Trends · Performance Radar
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- ── MINI HEADER ───────────────────────────────────────────────────── -->
+  <div class="mini-header">
+    <span class="mini-brand">GAME<span>RADAR</span> AI</span>
+    <span class="mini-title">Rookie Scouting Report &mdash; Asia Pacific</span>
+    <span class="mini-date">April 17, 2026</span>
+  </div>
+
+  <!-- ── RISING STARS ───────────────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">
+      <span class="section-icon">&#9733;</span>
+      Rising Stars
+      <span class="st-line"></span>
+    </h2>
+
+    <div class="stars-grid">
+      
+      <div class="star-card">
+
+        <!-- Photo or SVG avatar placeholder -->
+        <div class="star-photo-area">
+          
+            <!-- Geometric avatar: silhouette + initials -->
+            <svg class="star-avatar-placeholder" viewBox="0 0 54 54"
+                 xmlns="http://www.w3.org/2000/svg">
+              <!-- Background -->
+              <rect width="54" height="54" fill="#0c1524"/>
+              <!-- Hexagon frame -->
+              <polygon points="27,4 48,15.5 48,38.5 27,50 6,38.5 6,15.5"
+                       fill="#101d34" stroke="#1f3860" stroke-width="1"/>
+              <!-- Inner circle silhouette (head) -->
+              <circle cx="27" cy="21" r="9" fill="#1f3860"/>
+              <!-- Shoulder arc -->
+              <ellipse cx="27" cy="46" rx="14" ry="9" fill="#172845"/>
+              <!-- Initials -->
+              <text x="27" y="25" text-anchor="middle"
+                    font-size="12" font-weight="800" fill="#00d4ff"
+                    font-family="Segoe UI, Arial, sans-serif">
+                CH
+              </text>
+            </svg>
+          
+
+          <!-- Rank badge -->
+          <span class="rising-badge">
+            #1 Pick
+            
+          </span>
+        </div>
+
+        <!-- Card body -->
+        <div class="star-body">
+          <div class="star-nickname">Chovy</div>
+          
+            <div class="star-real-name">정지훈</div>
+          
+          <div class="star-team-role">
+            Gen.G &middot; 
+            <span class="role-badge role-mid">Mid</span>
+            &middot; KR
+          </div>
+
+          <!-- Key stats row -->
+          <div class="star-stats">
+            <div class="star-stat">
+              <div class="star-stat-val wr-high">
+                68.5%
+              </div>
+              <div class="star-stat-lbl">Win Rate</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">7.30</div>
+              <div class="star-stat-lbl">KDA</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">95</div>
+              <div class="star-stat-lbl">Games</div>
+            </div>
+          </div>
+
+          <!-- GameRadar Score -->
+          <div class="star-score-row">
+            <span class="star-score-label">GameRadar Score</span>
+            <span class="star-score">
+              7.26<span class="star-score-max"> / 10</span>
+            </span>
+          </div>
+        </div>
+
+      </div>
+      
+      <div class="star-card">
+
+        <!-- Photo or SVG avatar placeholder -->
+        <div class="star-photo-area">
+          
+            <!-- Geometric avatar: silhouette + initials -->
+            <svg class="star-avatar-placeholder" viewBox="0 0 54 54"
+                 xmlns="http://www.w3.org/2000/svg">
+              <!-- Background -->
+              <rect width="54" height="54" fill="#0c1524"/>
+              <!-- Hexagon frame -->
+              <polygon points="27,4 48,15.5 48,38.5 27,50 6,38.5 6,15.5"
+                       fill="#101d34" stroke="#1f3860" stroke-width="1"/>
+              <!-- Inner circle silhouette (head) -->
+              <circle cx="27" cy="21" r="9" fill="#1f3860"/>
+              <!-- Shoulder arc -->
+              <ellipse cx="27" cy="46" rx="14" ry="9" fill="#172845"/>
+              <!-- Initials -->
+              <text x="27" y="25" text-anchor="middle"
+                    font-size="12" font-weight="800" fill="#00d4ff"
+                    font-family="Segoe UI, Arial, sans-serif">
+                FA
+              </text>
+            </svg>
+          
+
+          <!-- Rank badge -->
+          <span class="rising-badge">
+            Rising
+            
+          </span>
+        </div>
+
+        <!-- Card body -->
+        <div class="star-body">
+          <div class="star-nickname">Faker</div>
+          
+            <div class="star-real-name">이상혁</div>
+          
+          <div class="star-team-role">
+            T1 &middot; 
+            <span class="role-badge role-mid">Mid</span>
+            &middot; KR
+          </div>
+
+          <!-- Key stats row -->
+          <div class="star-stats">
+            <div class="star-stat">
+              <div class="star-stat-val wr-high">
+                71.0%
+              </div>
+              <div class="star-stat-lbl">Win Rate</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">6.10</div>
+              <div class="star-stat-lbl">KDA</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">100</div>
+              <div class="star-stat-lbl">Games</div>
+            </div>
+          </div>
+
+          <!-- GameRadar Score -->
+          <div class="star-score-row">
+            <span class="star-score-label">GameRadar Score</span>
+            <span class="star-score">
+              7.14<span class="star-score-max"> / 10</span>
+            </span>
+          </div>
+        </div>
+
+      </div>
+      
+      <div class="star-card">
+
+        <!-- Photo or SVG avatar placeholder -->
+        <div class="star-photo-area">
+          
+            <!-- Geometric avatar: silhouette + initials -->
+            <svg class="star-avatar-placeholder" viewBox="0 0 54 54"
+                 xmlns="http://www.w3.org/2000/svg">
+              <!-- Background -->
+              <rect width="54" height="54" fill="#0c1524"/>
+              <!-- Hexagon frame -->
+              <polygon points="27,4 48,15.5 48,38.5 27,50 6,38.5 6,15.5"
+                       fill="#101d34" stroke="#1f3860" stroke-width="1"/>
+              <!-- Inner circle silhouette (head) -->
+              <circle cx="27" cy="21" r="9" fill="#1f3860"/>
+              <!-- Shoulder arc -->
+              <ellipse cx="27" cy="46" rx="14" ry="9" fill="#172845"/>
+              <!-- Initials -->
+              <text x="27" y="25" text-anchor="middle"
+                    font-size="12" font-weight="800" fill="#00d4ff"
+                    font-family="Segoe UI, Arial, sans-serif">
+                SH
+              </text>
+            </svg>
+          
+
+          <!-- Rank badge -->
+          <span class="rising-badge">
+            Watchlist
+            
+          </span>
+        </div>
+
+        <!-- Card body -->
+        <div class="star-body">
+          <div class="star-nickname">ShowMaker</div>
+          
+            <div class="star-real-name">허수</div>
+          
+          <div class="star-team-role">
+            DK &middot; 
+            <span class="role-badge role-mid">Mid</span>
+            &middot; KR
+          </div>
+
+          <!-- Key stats row -->
+          <div class="star-stats">
+            <div class="star-stat">
+              <div class="star-stat-val wr-high">
+                65.2%
+              </div>
+              <div class="star-stat-lbl">Win Rate</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">5.80</div>
+              <div class="star-stat-lbl">KDA</div>
+            </div>
+            <div class="star-stat">
+              <div class="star-stat-val">85</div>
+              <div class="star-stat-lbl">Games</div>
+            </div>
+          </div>
+
+          <!-- GameRadar Score -->
+          <div class="star-score-row">
+            <span class="star-score-label">GameRadar Score</span>
+            <span class="star-score">
+              6.50<span class="star-score-max"> / 10</span>
+            </span>
+          </div>
+        </div>
+
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- ── TWO COLUMNS: Market Trends + Radar Chart ───────────────────────── -->
+  <div class="two-col">
+
+    <!-- ── MARKET TRENDS ──────────────────────────────────────────────── -->
+    <div class="col-trends">
+      <section class="section">
+        <h2 class="section-title">
+          <span class="section-icon">&#128200;</span>
+          Market Trends
+          <span class="st-line"></span>
+        </h2>
+
+        
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-source-badge source-wanplus">
+              Wanplus
+            </span>
+            <span class="trend-date">Apr 17, 2026</span>
+          </div>
+          <div class="trend-title">LPL mid-laners dominate solo queue KDA rankings ahead of playoffs</div>
+          <div class="trend-summary">Analysis from Wanplus data shows LPL mid-laners averaging 5.8+ KDA over the past two weeks. Knight (TES) maintains position as the most consistent performer. Forum discussion highlights aggressive early-game adaptations and increased roaming in the current meta.</div>
+          
+            <div class="trend-original">Original: Mandarin Chinese (zh-CN)</div>
+          
+        </div>
+        
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-source-badge source-tec">
+              TEC
+            </span>
+            <span class="trend-date">Apr 15, 2026</span>
+          </div>
+          <div class="trend-title">Indian Challenger players show rapid development in macro play</div>
+          <div class="trend-summary">TEC India community reports that domestic Challenger players are closing the gap with established Asian regions. Win rates in high-Elo India queue increased by 3.2% over the past month, driven by coordinated team compositions and improved objective control.</div>
+          
+            <div class="trend-original">Original: Hindi (hi) / English</div>
+          
+        </div>
+        
+        <div class="trend-card">
+          <div class="trend-header">
+            <span class="trend-source-badge source-wanplus">
+              Wanplus
+            </span>
+            <span class="trend-date">Apr 12, 2026</span>
+          </div>
+          <div class="trend-title">Post-patch ADC stats surge — JackeyLove leads iG recovery</div>
+          <div class="trend-summary">Post-patch 14.7 data from Wanplus confirms JackeyLove (iG) posting improved laning phase numbers. Gold per minute up 4.2% vs prior period. Forum analysts note that Infinity Edge buffs disproportionately benefit Crit ADC players in the Chinese ladder meta.</div>
+          
+            <div class="trend-original">Original: Mandarin Chinese (zh-CN)</div>
+          
+        </div>
+        
+
+      </section>
+    </div>
+
+    <!-- ── PERFORMANCE RADAR ─────────────────────────────────────────── -->
+    <div class="col-radar">
+      <section class="section">
+        <h2 class="section-title">
+          <span class="section-icon">&#11044;</span>
+          Performance Radar
+          <span class="st-line"></span>
+        </h2>
+
+        <div class="radar-container">
+          <div class="radar-title">Top 1 vs Region Average</div>
+
+          <!--
+            All polygon coordinates and axis endpoints are pre-computed in Python
+            (generate_rookie_report.py) and injected as SVG-ready strings.
+            viewBox: 300 wide × 310 tall (includes legend at bottom).
+            Center: (150, 150), max radius: 95px, label radius: 114px.
+          -->
+          <svg class="radar-svg" viewBox="0 0 300 310"
+               xmlns="http://www.w3.org/2000/svg">
+
+            <!-- Grid pentagon fills (outer → inner) -->
+            <polygon class="radar-grid-bg-4 radar-grid-line" points="150.0,55.0 240.35,120.64 205.84,226.86 94.16,226.86 59.65,120.64"/>
+            <polygon class="radar-grid-bg-3 radar-grid-line" points="150.0,78.75 217.76,127.98 191.88,207.64 108.12,207.64 82.24,127.98"/>
+            <polygon class="radar-grid-bg-2 radar-grid-line" points="150.0,102.5 195.18,135.32 177.92,188.43 122.08,188.43 104.82,135.32"/>
+            <polygon class="radar-grid-bg-1 radar-grid-line" points="150.0,126.25 172.59,142.66 163.96,169.21 136.04,169.21 127.41,142.66"/>
+
+            <!-- Axis lines (center → each vertex) -->
+            
+            <line class="radar-axis-line"
+                  x1="150" y1="150" x2="150.00" y2="55.00"/>
+            
+            <line class="radar-axis-line"
+                  x1="150" y1="150" x2="240.35" y2="120.64"/>
+            
+            <line class="radar-axis-line"
+                  x1="150" y1="150" x2="205.84" y2="226.86"/>
+            
+            <line class="radar-axis-line"
+                  x1="150" y1="150" x2="94.16" y2="226.86"/>
+            
+            <line class="radar-axis-line"
+                  x1="150" y1="150" x2="59.65" y2="120.64"/>
+            
+
+            <!-- Grid % tick labels (placed just right of the top axis line) -->
+            <text class="radar-tick-label" x="153" y="129" text-anchor="start">25%</text>
+            <text class="radar-tick-label" x="153" y="106" text-anchor="start">50%</text>
+            <text class="radar-tick-label" x="153" y="82"  text-anchor="start">75%</text>
+
+            <!-- Region average polygon (below top1 in stacking order) -->
+            <polygon class="radar-avg-poly" points="150.0,114.01 209.53,130.66 182.76,195.09 117.24,195.09 93.78,131.73"/>
+
+            <!-- Top 1 polygon -->
+            <polygon class="radar-top1-poly" points="150.0,103.77 211.89,129.89 185.37,198.68 114.63,198.68 84.38,128.68"/>
+
+            <!-- Vertex dots — Top 1 -->
+            
+            <circle class="radar-dot-top1"
+                    cx="150.00" cy="103.77" r="3.2"/>
+            
+            <circle class="radar-dot-top1"
+                    cx="211.89" cy="129.89" r="3.2"/>
+            
+            <circle class="radar-dot-top1"
+                    cx="185.37" cy="198.68" r="3.2"/>
+            
+            <circle class="radar-dot-top1"
+                    cx="114.63" cy="198.68" r="3.2"/>
+            
+            <circle class="radar-dot-top1"
+                    cx="84.38" cy="128.68" r="3.2"/>
+            
+
+            <!-- Vertex dots — Region Average -->
+            
+            <circle class="radar-dot-avg"
+                    cx="150.00" cy="114.01" r="2.4"/>
+            
+            <circle class="radar-dot-avg"
+                    cx="209.53" cy="130.66" r="2.4"/>
+            
+            <circle class="radar-dot-avg"
+                    cx="182.76" cy="195.09" r="2.4"/>
+            
+            <circle class="radar-dot-avg"
+                    cx="117.24" cy="195.09" r="2.4"/>
+            
+            <circle class="radar-dot-avg"
+                    cx="93.78" cy="131.73" r="2.4"/>
+            
+
+            <!-- Axis labels (text-anchor set per axis position) -->
+            
+            <text class="radar-axis-label"
+                  x="150.00" y="33.00"
+                  text-anchor="middle">KDA</text>
+            
+            <text class="radar-axis-label"
+                  x="258.42" y="111.77"
+                  text-anchor="start">Win Rate</text>
+            
+            <text class="radar-axis-label"
+                  x="217.01" y="245.23"
+                  text-anchor="start">Consistency</text>
+            
+            <text class="radar-axis-label"
+                  x="82.99" y="245.23"
+                  text-anchor="end">Match Freq</text>
+            
+            <text class="radar-axis-label"
+                  x="41.58" y="111.77"
+                  text-anchor="end">Score</text>
+            
+
+            <!-- Legend row -->
+            <rect x="50" y="287" width="28" height="6" rx="3"
+                  fill="rgba(0,212,255,0.30)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text class="radar-legend-text" x="83" y="293">
+              Chovy (Top 1)
+            </text>
+
+            <rect x="175" y="287" width="28" height="6" rx="3"
+                  fill="rgba(168,85,247,0.30)" stroke="#a855f7" stroke-width="1.5"/>
+            <text class="radar-legend-text" x="208" y="293">Region Avg</text>
+
+          </svg>
+
+        </div>
+      </section>
+    </div>
+
+  </div><!-- END TWO-COL -->
+
+  <!-- ── PAGE 2 FOOTER ──────────────────────────────────────────────────── -->
+  <div class="footer">
+    <div class="footer-brand"><span>GAME</span>RADAR AI</div>
+    <div class="footer-disclaimer">
+      Confidential &mdash; Rookie Plan Intelligence Report.
+      Score&nbsp;=&nbsp;(KDA&times;0.35)+(WR&times;0.45)+(MF&times;0.20)
+      &bull; KR&times;1.20 &bull; IN&times;0.90 &bull; Others&times;1.00
+    </div>
+    <div class="footer-page">Page 2 / 2</div>
+  </div>
+
+</div><!-- END PAGE 2 -->
+
+</body>
+</html>
