@@ -76,10 +76,16 @@ except ImportError:
 # ──────────────────────────────────────────────────────────────────────────────
 
 BASE_DIR         = pathlib.Path(__file__).parent
-SUBSCRIBERS_PATH = BASE_DIR / "subscribers.csv"
-SYNC_LOG_PATH    = BASE_DIR / "reports" / "subscriber_sync_log.csv"
+SUBSCRIBERS_PATH    = BASE_DIR / "subscribers.csv"
+SYNC_LOG_PATH       = BASE_DIR / "reports" / "subscriber_sync_log.csv"
+CANCELLATIONS_LOG   = BASE_DIR / "reports" / "cancellations_log.csv"
+CHURN_LOG_PATH      = BASE_DIR / "reports" / "churn_logs.csv"
 
-_CSV_FIELDNAMES = ["email", "region_plan", "messenger", "plan", "source", "subscribed_at"]
+# status column is the last field — existing rows without it default to Active
+_CSV_FIELDNAMES = ["email", "region_plan", "messenger", "plan", "source", "subscribed_at", "status"]
+
+_STATUS_ACTIVE   = "Active"
+_STATUS_INACTIVE = "Inactive"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Region mapping — must stay consistent with delivery.py REGION_CONFIG
@@ -347,6 +353,9 @@ def append_subscribers(
             )
             if not file_exists:
                 writer.writeheader()
+            # Stamp every new subscriber as Active
+            for sub in new_subs:
+                sub.setdefault("status", _STATUS_ACTIVE)
             writer.writerows(new_subs)
 
     return len(new_subs)
@@ -394,6 +403,167 @@ _REPORT_SLUG: dict[str, str] = {
 
 def _report_slug(region_plan: str) -> str:
     return _REPORT_SLUG.get(region_plan.lower(), "global")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Cancellation handling — reads cancellations_log.csv written by webhook,
+# marks affected rows Inactive in subscribers.csv, archives to churn_logs.csv
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _load_cancelled_emails(log_path: pathlib.Path) -> set[str]:
+    """
+    Return the set of emails from cancellations_log.csv (written by
+    POST /stripe/webhook → customer.subscription.deleted).
+    """
+    if not log_path.exists():
+        return set()
+    emails: set[str] = set()
+    try:
+        with log_path.open(newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                email = row.get("email", "").strip().lower()
+                if email:
+                    emails.add(email)
+    except Exception as exc:
+        logger.warning(f"Could not read {log_path.name}: {exc}")
+    return emails
+
+
+def handle_cancellations(
+    csv_path: pathlib.Path,
+    churn_path: pathlib.Path,
+    cancellations_log: pathlib.Path,
+    dry_run: bool = False,
+) -> int:
+    """
+    Read cancellations_log.csv → find matching emails in subscribers.csv
+    → mark them Inactive → archive their rows to churn_logs.csv.
+
+    The operation is atomic at the file level:
+      1. Read all rows into memory
+      2. Identify rows to deactivate (email in cancelled set, status != Inactive)
+      3. Write the full updated list back (Active rows unchanged)
+      4. Append deactivated rows to churn_logs.csv
+
+    Returns the number of rows deactivated.
+    """
+    cancelled_emails = _load_cancelled_emails(cancellations_log)
+    if not cancelled_emails:
+        logger.info("No cancellations found in cancellations_log.csv — nothing to deactivate")
+        return 0
+
+    logger.info(
+        f"Cancellation log has {len(cancelled_emails)} email(s): "
+        + ", ".join(sorted(cancelled_emails))
+    )
+
+    if not csv_path.exists():
+        logger.warning(f"subscribers.csv not found at {csv_path} — skipping cancellation pass")
+        return 0
+
+    # ── Read all rows ─────────────────────────────────────────────────────────
+    all_rows: list[dict] = []
+    original_fieldnames: list[str] = []
+    try:
+        with csv_path.open(newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            original_fieldnames = list(reader.fieldnames or [])
+            all_rows = list(reader)
+    except Exception as exc:
+        logger.error(f"Failed to read {csv_path}: {exc}")
+        return 0
+
+    # Ensure 'status' column exists in fieldnames (backwards compat)
+    write_fieldnames = original_fieldnames[:]
+    if "status" not in write_fieldnames:
+        write_fieldnames.append("status")
+
+    # ── Identify rows to deactivate ───────────────────────────────────────────
+    to_deactivate: list[dict] = []
+    ts_now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    for row in all_rows:
+        email = row.get("email", "").strip().lower()
+        current_status = row.get("status", _STATUS_ACTIVE).strip()
+        if email in cancelled_emails and current_status != _STATUS_INACTIVE:
+            to_deactivate.append(dict(row))   # snapshot before mutation
+            row["status"] = _STATUS_INACTIVE
+        elif not row.get("status"):
+            row["status"] = _STATUS_ACTIVE   # back-fill missing status
+
+    if not to_deactivate:
+        logger.info("All cancelled emails are already marked Inactive — nothing to do")
+        return 0
+
+    logger.info(
+        f"Found {len(to_deactivate)} subscriber(s) to mark Inactive:"
+    )
+    for row in to_deactivate:
+        logger.info(
+            f"  ✗ {row.get('email', '?'):<40}  "
+            f"{row.get('region_plan', '?')}"
+        )
+
+    if dry_run:
+        logger.info("[DRY-RUN] No changes written.")
+        return len(to_deactivate)
+
+    # ── Write updated subscribers.csv (full rewrite) ──────────────────────────
+    with _csv_write_lock:
+        with csv_path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(
+                fh,
+                fieldnames=write_fieldnames,
+                extrasaction="ignore",
+            )
+            writer.writeheader()
+            writer.writerows(all_rows)
+
+    logger.success(
+        f"subscribers.csv updated — {len(to_deactivate)} row(s) marked Inactive"
+    )
+
+    # ── Archive to churn_logs.csv ─────────────────────────────────────────────
+    _append_to_churn_log(to_deactivate, churn_path, ts_now)
+
+    return len(to_deactivate)
+
+
+def _append_to_churn_log(
+    rows: list[dict],
+    churn_path: pathlib.Path,
+    cancelled_at: str,
+) -> None:
+    """
+    Append cancelled subscriber rows to churn_logs.csv.
+    Adds a 'cancelled_at' timestamp column for churn analysis.
+    """
+    churn_path.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = churn_path.exists()
+
+    churn_fieldnames = [
+        "cancelled_at",
+        "email", "region_plan", "messenger", "plan",
+        "source", "subscribed_at", "status",
+    ]
+
+    with churn_path.open("a", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=churn_fieldnames,
+            extrasaction="ignore",
+        )
+        if not file_exists:
+            writer.writeheader()
+        for row in rows:
+            churn_row = dict(row)
+            churn_row["cancelled_at"] = cancelled_at
+            churn_row["status"]       = _STATUS_INACTIVE
+            writer.writerow(churn_row)
+
+    logger.success(
+        f"Archived {len(rows)} churned subscriber(s) → {churn_path.name}"
+    )
 
 
 def validate_assignments(subs: list[dict]) -> None:
@@ -464,6 +634,11 @@ Run order (every Monday):
         help=f"Path to subscribers CSV (default: {SUBSCRIBERS_PATH})",
         default=str(SUBSCRIBERS_PATH),
     )
+    p.add_argument(
+        "--skip-cancellations",
+        action="store_true",
+        help="Skip the cancellation pass (do not deactivate churned subscribers)",
+    )
     return p.parse_args()
 
 
@@ -501,7 +676,27 @@ def main() -> int:
             logger.error(f"Invalid --since date: {args.since!r}  (expected YYYY-MM-DD)")
             return 1
 
+    # ── Handle cancellations first (deactivate before adding new) ─────────────
+    if not args.skip_cancellations:
+        logger.info("─" * 55)
+        logger.info("Phase 1 — Cancellation pass")
+        deactivated = handle_cancellations(
+            csv_path=csv_path,
+            churn_path=CHURN_LOG_PATH,
+            cancellations_log=CANCELLATIONS_LOG,
+            dry_run=args.dry_run,
+        )
+        if deactivated:
+            logger.warning(
+                f"  {deactivated} subscriber(s) deactivated. "
+                f"delivery.py will skip them automatically."
+            )
+        logger.info("─" * 55)
+    else:
+        logger.info("Cancellation pass skipped (--skip-cancellations)")
+
     # ── Fetch from Stripe ──────────────────────────────────────────────────────
+    logger.info("Phase 2 — New subscriber sync")
     all_from_stripe = fetch_paid_subscribers(since_ts=since_ts, max_pages=args.limit)
 
     if not all_from_stripe:
@@ -554,6 +749,7 @@ def main() -> int:
     if not args.dry_run:
         logger.info("")
         logger.info("Next step: run delivery.py to send this week's reports")
+        logger.info("  (Inactive subscribers are automatically excluded)")
         logger.info("  python delivery.py")
 
     return 0

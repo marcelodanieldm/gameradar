@@ -230,6 +230,15 @@ def load_subscribers(csv_path: pathlib.Path) -> list[Subscriber]:
                 skipped += 1
                 continue
 
+            # ── Skip inactive subscribers (churned / cancelled) ───────────────
+            status = row.get("status", "Active").strip()
+            if status.lower() == "inactive":
+                logger.debug(
+                    f"Row {i}: {email} is Inactive — excluded from delivery"
+                )
+                skipped += 1
+                continue
+
             if not region_plan:
                 logger.warning(
                     f"Row {i}: email '{email}' has no region_plan — "
@@ -456,7 +465,8 @@ _HTML_BODY_TEMPLATE = """\
                     GameRadar AI &copy; {year} &nbsp;|&nbsp;
                     Scouting Intelligence Platform<br>
                     You are receiving this report as a GameRadar subscriber.<br>
-                    To unsubscribe, remove your entry from subscribers.csv.
+                    <a href="https://gameradar.ai/unsubscribe?email={{email}}&amp;region={{region_slug}}"
+                       style="color:#3e5478;">Manage or cancel your subscription</a>
                   </td>
                   <td align="right" style="color:#3e5478;font-size:11px;">
                     {region_plan_display}
