@@ -81,8 +81,8 @@ SYNC_LOG_PATH       = BASE_DIR / "reports" / "subscriber_sync_log.csv"
 CANCELLATIONS_LOG   = BASE_DIR / "reports" / "cancellations_log.csv"
 CHURN_LOG_PATH      = BASE_DIR / "reports" / "churn_logs.csv"
 
-# status column is the last field — existing rows without it default to Active
-_CSV_FIELDNAMES = ["email", "region_plan", "messenger", "plan", "source", "subscribed_at", "status"]
+# status/language are the last fields — existing rows without them default to Active/en
+_CSV_FIELDNAMES = ["email", "region_plan", "messenger", "plan", "source", "subscribed_at", "status", "language"]
 
 _STATUS_ACTIVE   = "Active"
 _STATUS_INACTIVE = "Inactive"

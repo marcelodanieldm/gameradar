@@ -119,6 +119,75 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
+         AUTH GATE — full-screen overlay, visible until token verified
+    ══════════════════════════════════════════════════════════════ -->
+    <div id="auth-gate"
+         class="fixed inset-0 z-50 bg-slate-950/97 backdrop-blur-sm
+                flex items-center justify-center px-6"
+         style="transition: opacity 0.3s ease;"
+         role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
+        <div class="w-full max-w-sm">
+
+            <!-- Logo -->
+            <div class="flex items-center gap-2.5 justify-center mb-8">
+                <div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg"></div>
+                <span class="font-bold text-base text-white tracking-wide">
+                    Game<span class="text-cyan-400">Radar</span>
+                    <span class="text-slate-500 font-normal">AI</span>
+                </span>
+            </div>
+
+            <!-- Card -->
+            <div class="section-card rounded-2xl p-7">
+                <h2 id="auth-gate-title"
+                    class="text-white text-xl font-bold mb-1">Subscriber Hub</h2>
+                <p class="text-slate-400 text-sm mb-6">
+                    Enter the email you used when subscribing and
+                    we’ll verify your access.
+                </p>
+
+                <form id="auth-form" onsubmit="submitAuth(event)" novalidate>
+                    <label for="auth-email"
+                           class="block text-slate-400 text-xs font-semibold
+                                  uppercase tracking-wider mb-2">
+                        Subscriber Email
+                    </label>
+                    <input id="auth-email"
+                           type="email"
+                           autocomplete="email"
+                           placeholder="you@example.com"
+                           class="w-full bg-slate-950 border border-slate-700/70
+                                  text-white text-sm rounded-xl
+                                  px-4 py-3 mb-3 placeholder-slate-600
+                                  hover:border-slate-600
+                                  focus:outline-none focus:border-cyan-500/50
+                                  focus:ring-2 focus:ring-cyan-500/10 transition"
+                           required />
+
+                    <!-- Error -->
+                    <p id="auth-error"
+                       class="hidden text-red-400 text-xs mb-3 px-1"
+                       role="alert"></p>
+
+                    <button type="submit" id="auth-btn"
+                            class="btn-save w-full rounded-xl py-3 text-sm
+                                   font-bold text-white tracking-wide">
+                        Access Hub &rarr;
+                    </button>
+                </form>
+
+                <p class="text-slate-600 text-xs text-center mt-5">
+                    Not yet a subscriber?
+                    <a href="landing.html"
+                       class="text-cyan-500/70 hover:text-cyan-400 transition ml-1">
+                        Get access &rarr;
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
          TOP NAV
     ══════════════════════════════════════════════════════════════ -->
     <header class="relative border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-30">
@@ -133,13 +202,23 @@
                 </span>
             </a>
 
-            <!-- Right side — email pill -->
+            <!-- Right side — email pill + actions -->
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800
                              rounded-full px-3 py-1.5 text-xs text-slate-400">
                     <span class="live-dot w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
                     <span id="nav-email" class="font-mono truncate max-w-[160px]">—</span>
                 </div>
+                <!-- Billing: server resolves customer_id — never sent to browser -->
+                <button id="billing-btn" onclick="doBillingPortal()"
+                        class="text-xs font-semibold text-cyan-400 hover:text-white
+                               bg-cyan-500/10 border border-cyan-500/25
+                               hover:border-cyan-500/50 hover:bg-cyan-500/20
+                               rounded-full px-3 py-1.5 transition
+                               disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Manage billing via Stripe">
+                    Billing
+                </button>
                 <a href="unsubscribe.html"
                    class="text-xs text-slate-500 hover:text-slate-300 transition">
                     Manage plan
@@ -378,283 +457,272 @@
     ══════════════════════════════════════════════════════════════ -->
     <script>
     // ── Config ────────────────────────────────────────────────────────────────
-    var HUB_API_BASE = 'http://localhost:8000';
+    var HUB_API_BASE = window.HUB_API_BASE || 'http://localhost:8000';
 
-    // Region metadata: flag emoji + label per canonical region_plan
+    // Region metadata
     var REGION_META = {
-        'Korea LCK':   { flag: '🇰🇷', label: 'Korea LCK',   sub: 'League of Legends · LCK' },
-        'China LPL':   { flag: '🇨🇳', label: 'China LPL',   sub: 'League of Legends · LPL' },
-        'India':       { flag: '🇮🇳', label: 'India',        sub: 'TEC · Regional Circuit' },
-        'Japan LJL':   { flag: '🇯🇵', label: 'Japan LJL',    sub: 'League of Legends · LJL' },
-        'Vietnam VCS': { flag: '🇻🇳', label: 'Vietnam VCS',  sub: 'League of Legends · VCS' },
-        'Asia Pacific':{ flag: '🌏', label: 'Asia Pacific',  sub: 'Multi-region' },
-        'Global':      { flag: '🌐', label: 'Global',         sub: 'All regions combined' },
+        'Korea LCK':   { flag: '🇰🇷', label: 'Korea LCK',    sub: 'League of Legends · LCK' },
+        'China LPL':   { flag: '🇨🇳', label: 'China LPL',    sub: 'League of Legends · LPL' },
+        'India':       { flag: '🇮🇳', label: 'India',         sub: 'TEC · Regional Circuit'  },
+        'Japan LJL':   { flag: '🇯🇵', label: 'Japan LJL',     sub: 'League of Legends · LJL' },
+        'Vietnam VCS': { flag: '🇻🇳', label: 'Vietnam VCS',   sub: 'League of Legends · VCS' },
+        'Asia Pacific':{ flag: '🌏',              label: 'Asia Pacific',  sub: 'Multi-region'                 },
+        'Global':      { flag: '🌐',              label: 'Global',         sub: 'All regions combined'         },
     };
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Session (sessionStorage — safer than localStorage for auth tokens) ──────────────
+    // The Stripe customer_id is NEVER stored on the client.
+    var _session = { email: '', token: '', region: '', lang: 'en' };
+
+    function _loadSession() {
+        _session.email  = sessionStorage.getItem('gr_hub_email')  || '';
+        _session.token  = sessionStorage.getItem('gr_hub_token')  || '';
+        _session.region = sessionStorage.getItem('gr_hub_region') || '';
+        _session.lang   = sessionStorage.getItem('gr_hub_lang')   || 'en';
+    }
+    function _saveSession(data) {
+        _session.email  = (data.email      || '').toLowerCase().trim();
+        _session.token  = data.token       || '';
+        _session.region = data.region_plan || 'Global';
+        _session.lang   = data.language    || 'en';
+        sessionStorage.setItem('gr_hub_email',  _session.email);
+        sessionStorage.setItem('gr_hub_token',  _session.token);
+        sessionStorage.setItem('gr_hub_region', _session.region);
+        sessionStorage.setItem('gr_hub_lang',   _session.lang);
+    }
+    function _clearSession() {
+        _session.email = _session.token = _session.region = '';
+        _session.lang  = 'en';
+        ['gr_hub_email','gr_hub_token','gr_hub_region','gr_hub_lang']
+            .forEach(function(k){ sessionStorage.removeItem(k); });
+    }
+
+    // ── Auth gate ───────────────────────────────────────────────────────────────────────
+    function showAuthGate(msg) {
+        var gate = document.getElementById('auth-gate');
+        if (!gate) return;
+        gate.style.transition = '';
+        gate.style.opacity    = '1';
+        gate.classList.remove('hidden');
+        var hint = getParam('email') || localStorage.getItem('gr_rookie_email') || '';
+        var inp  = document.getElementById('auth-email');
+        if (inp && hint && !inp.value) inp.value = hint;
+        if (msg) {
+            var el = document.getElementById('auth-error');
+            if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+        }
+    }
+    function hideAuthGate() {
+        var gate = document.getElementById('auth-gate');
+        if (!gate) return;
+        gate.style.transition = 'opacity 0.3s ease';
+        gate.style.opacity    = '0';
+        setTimeout(function(){ gate.classList.add('hidden'); }, 320);
+    }
+    function submitAuth(e) {
+        e.preventDefault();
+        var email = (document.getElementById('auth-email').value || '').trim().toLowerCase();
+        if (!email) return;
+        var btn   = document.getElementById('auth-btn');
+        var errEl = document.getElementById('auth-error');
+        btn.disabled    = true;
+        btn.textContent = 'Verifying…';
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+        fetch(HUB_API_BASE + '/subscriber/auth', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: email }),
+        })
+        .then(function(r){
+            if (!r.ok) return r.json().then(function(b){ throw new Error(b.detail || ('HTTP '+r.status)); });
+            return r.json();
+        })
+        .then(function(data){
+            _saveSession(data);
+            hideAuthGate();
+            renderHub();
+        })
+        .catch(function(err){
+            btn.disabled    = false;
+            btn.textContent = 'Access Hub →';
+            errEl.textContent = err.message || 'Verification failed. Check your email.';
+            errEl.classList.remove('hidden');
+        });
+    }
+
+    // ── Billing portal ──────────────────────────────────────────────────────────────
+    // Server resolves customer_id — it is NEVER sent to the browser.
+    function doBillingPortal() {
+        if (!_session.email || !_session.token) { showAuthGate(); return; }
+        var btn = document.getElementById('billing-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+        fetch(HUB_API_BASE + '/stripe/portal-session', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: _session.email, return_url: window.location.href }),
+        })
+        .then(function(r){
+            if (!r.ok) return r.json().then(function(b){ throw new Error(b.detail || 'Billing portal unavailable'); });
+            return r.json();
+        })
+        .then(function(data){ window.location.href = data.url; })
+        .catch(function(err){
+            if (btn) { btn.disabled = false; btn.textContent = 'Billing'; }
+            showToast('⚠ ' + (err.message || 'Could not open billing portal'), 'error');
+        });
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────────────────
     function getParam(name) {
         return new URLSearchParams(window.location.search).get(name) || '';
     }
-
     function nextMonday() {
         var d = new Date();
-        var day = d.getDay();
-        var diff = (day === 0) ? 1 : (8 - day);
-        d.setDate(d.getDate() + diff);
+        d.setDate(d.getDate() + ((d.getDay() === 0) ? 1 : (8 - d.getDay())));
         return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     }
-
-    // ── Region flag helper ────────────────────────────────────────────────────
-    function flagForRegion(region) {
-        var meta = REGION_META[region] || REGION_META['Global'];
-        return meta.flag;
-    }
-
     function onRegionChange(value) {
-        var flag = flagForRegion(value);
-        document.getElementById('region-flag-sel').textContent = flag;
+        document.getElementById('region-flag-sel').textContent =
+            (REGION_META[value] || REGION_META['Global']).flag;
         markDirty();
     }
 
-    // ── Dirty state — enables Save button only on change ─────────────────────
+    // ── Dirty state ───────────────────────────────────────────────────────────────────
     var _dirty = false;
-    function markDirty() {
-        _dirty = true;
-    }
+    function markDirty() { _dirty = true; }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('pref-lang').addEventListener('change', markDirty);
-    });
-
-    // ── Bootstrap page from localStorage / URL params ────────────────────────
-    function initHub() {
-        var email      = getParam('email')      || localStorage.getItem('gr_rookie_email')      || '';
-        var region     = getParam('region')     || localStorage.getItem('gr_rookie_region')     || 'Global';
-        var lang       = localStorage.getItem('gr_pref_lang')   || 'en';
-
-        // Normalise region casing
-        var regionNorm = region.trim();
-
-        // Nav email pill
-        if (email) {
-            document.getElementById('nav-email').textContent = email;
-        }
-
-        // ── Current Radar ─────────────────────────────────────────────────
-        var meta = REGION_META[regionNorm] || REGION_META['Global'];
-        document.getElementById('region-flag').textContent  = meta.flag;
-        document.getElementById('region-name').textContent  = meta.label;
-        document.getElementById('region-sub').textContent   = meta.sub;
+    // ── Render hub ───────────────────────────────────────────────────────────────────
+    function renderHub() {
+        var region = _session.region || 'Global';
+        var lang   = _session.lang   || 'en';
+        var email  = _session.email  || '';
+        var navEmail = document.getElementById('nav-email');
+        if (navEmail) navEmail.textContent = email || '—';
+        var meta = REGION_META[region] || REGION_META['Global'];
+        document.getElementById('region-flag').textContent      = meta.flag;
+        document.getElementById('region-name').textContent      = meta.label;
+        document.getElementById('region-sub').textContent       = meta.sub;
         document.getElementById('next-report-date').textContent = nextMonday();
-
-        // ── Preferences selectors ─────────────────────────────────────────
-        var regionSel = document.getElementById('pref-region');
-        for (var i = 0; i < regionSel.options.length; i++) {
-            if (regionSel.options[i].value === regionNorm) {
-                regionSel.selectedIndex = i;
-                break;
-            }
+        var rSel = document.getElementById('pref-region');
+        for (var i = 0; i < rSel.options.length; i++) {
+            if (rSel.options[i].value === region) { rSel.selectedIndex = i; break; }
         }
         document.getElementById('region-flag-sel').textContent = meta.flag;
-
-        var langSel = document.getElementById('pref-lang');
-        for (var j = 0; j < langSel.options.length; j++) {
-            if (langSel.options[j].value === lang) {
-                langSel.selectedIndex = j;
-                break;
-            }
+        var lSel = document.getElementById('pref-lang');
+        for (var j = 0; j < lSel.options.length; j++) {
+            if (lSel.options[j].value === lang) { lSel.selectedIndex = j; break; }
         }
-
-        // ── Archive ───────────────────────────────────────────────────────
-        renderArchive(regionNorm);
+        renderArchive(region);
     }
 
-    // ── Report archive renderer ───────────────────────────────────────────────
+    // ── Report archive ────────────────────────────────────────────────────────────────
     function renderArchive(region) {
-        var meta   = REGION_META[region] || REGION_META['Global'];
-        var flag   = meta.flag;
-        var label  = meta.label;
-
-        // Generate the last 4 Mondays (most recent first)
-        var mondays = [];
-        var d = new Date();
-        // Walk back to last Monday
+        var meta  = REGION_META[region] || REGION_META['Global'];
+        var mondays = [], d = new Date();
         d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-        for (var i = 0; i < 4; i++) {
-            mondays.push(new Date(d));
-            d.setDate(d.getDate() - 7);
-        }
-
-        // Determine which report is "delivered" (past) vs pending
-        var now = new Date();
+        for (var i = 0; i < 4; i++) { mondays.push(new Date(d)); d.setDate(d.getDate() - 7); }
+        var now  = new Date();
         var list = document.getElementById('report-list');
         list.innerHTML = '';
-
-        mondays.forEach(function (date, idx) {
-            var isPast     = date <= now;
-            var monthYear  = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            var slug       = label.toLowerCase().replace(/\s+/g, '_');
-            var filename   = slug + '_Report_' + date.toISOString().slice(0,7) + '.pdf';
-
+        mondays.forEach(function(date) {
+            var isPast    = date <= now;
+            var monthYear = date.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+            var slug      = meta.label.toLowerCase().replace(/\s+/g,'_');
+            var fname     = slug + '_Report_' + date.toISOString().slice(0,7) + '.pdf';
             var li = document.createElement('li');
-            li.className = 'report-row flex items-center gap-4 border border-slate-800/50 ' +
-                           'rounded-xl px-4 py-3.5 cursor-default';
-
-            // Status indicator
-            var statusDot = isPast
-                ? '<span class="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" title="Delivered"></span>'
-                : '<span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0" title="Upcoming"></span>';
-
-            // Badge
-            var badge = isPast
-                ? '<span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 ' +
-                  'rounded-full px-2 py-0.5 tracking-wide">DELIVERED</span>'
-                : '<span class="text-[10px] font-bold text-slate-500 bg-slate-800/60 border border-slate-700/50 ' +
-                  'rounded-full px-2 py-0.5 tracking-wide">UPCOMING</span>';
-
-            // Download link — only for delivered reports
+            li.className = 'report-row flex items-center gap-4 border border-slate-800/50 rounded-xl px-4 py-3.5 cursor-default';
+            var dot   = isPast ? '<span class="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0"></span>'
+                               : '<span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></span>';
+            var badge = isPast ? '<span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-2 py-0.5 tracking-wide">DELIVERED</span>'
+                               : '<span class="text-[10px] font-bold text-slate-500 bg-slate-800/60 border border-slate-700/50 rounded-full px-2 py-0.5 tracking-wide">UPCOMING</span>';
             var action = isPast
-                ? '<a href="' + encodeURI('/reports/' + filename) + '" ' +
-                  'download="' + filename + '" ' +
-                  'class="flex-shrink-0 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 ' +
-                  'border border-slate-700/40 hover:border-cyan-500/30 transition group" ' +
-                  'title="Download PDF" aria-label="Download ' + monthYear + ' report">' +
-                  '<svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400 transition" ' +
-                  'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-                  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-                  '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>' +
-                  '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
-                  '</svg></a>'
-                : '<div class="flex-shrink-0 p-2 rounded-lg bg-slate-900/60 border border-slate-800/30" ' +
-                  'aria-hidden="true">' +
-                  '<svg class="w-3.5 h-3.5 text-slate-700" viewBox="0 0 24 24" fill="none" ' +
-                  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                  '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' +
-                  '</svg></div>';
-
-            li.innerHTML =
-                statusDot +
-                '<span class="text-xl leading-none flex-shrink-0" role="img" aria-hidden="true">' + flag + '</span>' +
-                '<div class="flex-1 min-w-0">' +
-                  '<p class="text-white text-sm font-semibold truncate">' + label + ' Rookie Report</p>' +
-                  '<p class="text-slate-500 text-xs mt-0.5">' + monthYear + '</p>' +
-                '</div>' +
-                badge +
-                action;
-
+                ? '<a href="'+encodeURI('/reports/'+fname)+'" download="'+fname+'" class="flex-shrink-0 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/40 hover:border-cyan-500/30 transition group" title="Download PDF"><svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>'
+                : '<div class="flex-shrink-0 p-2 rounded-lg bg-slate-900/60 border border-slate-800/30"><svg class="w-3.5 h-3.5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>';
+            li.innerHTML = dot +
+                '<span class="text-xl leading-none flex-shrink-0">'+meta.flag+'</span>' +
+                '<div class="flex-1 min-w-0"><p class="text-white text-sm font-semibold truncate">'+meta.label+' Rookie Report</p>' +
+                '<p class="text-slate-500 text-xs mt-0.5">'+monthYear+'</p></div>' +
+                badge + action;
             list.appendChild(li);
         });
     }
 
-    // ── Save Preferences ──────────────────────────────────────────────────────
+    // ── Save Preferences ──────────────────────────────────────────────────────────
     function savePreferences(e) {
         e.preventDefault();
-
+        if (!_session.token) { showAuthGate('Session expired. Please re-enter your email.'); return; }
         var region = document.getElementById('pref-region').value;
         var lang   = document.getElementById('pref-lang').value;
-
-        // Persist locally
-        localStorage.setItem('gr_rookie_region', region);
-        localStorage.setItem('gr_pref_lang',     lang);
-
-        // Update Current Radar card live
+        // Optimistic update
+        _session.region = region; _session.lang = lang;
+        sessionStorage.setItem('gr_hub_region', region);
+        sessionStorage.setItem('gr_hub_lang',   lang);
         var meta = REGION_META[region] || REGION_META['Global'];
         document.getElementById('region-flag').textContent = meta.flag;
         document.getElementById('region-name').textContent = meta.label;
         document.getElementById('region-sub').textContent  = meta.sub;
         renderArchive(region);
-
-        // Disable button briefly (prevent double-submit)
         var btn = document.getElementById('save-btn');
-        btn.disabled = true;
-        btn.textContent = 'Saved ✓';
-        setTimeout(function () {
-            btn.disabled = false;
-            btn.textContent = 'Save Preferences';
-        }, 2000);
-
-        _dirty = false;
-
-        // Fire toast
-        showToast(
-            '✓ Changes will be applied to your next weekly report.',
-            'success'
-        );
-
-        // Optional: POST to API to persist server-side
-        var email = localStorage.getItem('gr_rookie_email') || '';
-        if (email) {
-            fetch(HUB_API_BASE + '/subscriber/preferences', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, region_plan: region, language: lang }),
-            }).catch(function () {
-                // Silent fail — localStorage is the source of truth for now
-            });
-        }
+        btn.disabled = true; btn.textContent = 'Saving…';
+        fetch(HUB_API_BASE + '/subscriber/preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _session.token },
+            body: JSON.stringify({ email: _session.email, region_plan: region, language: lang }),
+        })
+        .then(function(r){
+            if (r.status === 401) { _clearSession(); showAuthGate('Session expired. Please re-enter your email.'); throw new Error('__expired__'); }
+            if (!r.ok) return r.json().then(function(b){ throw new Error(b.detail || 'Save failed'); });
+            return r.json();
+        })
+        .then(function(){
+            btn.disabled = false; btn.textContent = 'Save Preferences';
+            _dirty = false;
+            showToast('✓ Changes will be applied to your next weekly report.', 'success');
+        })
+        .catch(function(err){
+            if (err.message === '__expired__') return;
+            btn.disabled = false; btn.textContent = 'Save Preferences';
+            showToast('⚠ ' + (err.message || 'Could not save preferences'), 'error');
+        });
     }
 
-    // ── Toast system ──────────────────────────────────────────────────────────
+    // ── Toast ────────────────────────────────────────────────────────────────────────────
     var _toastTimer = null;
-
     function showToast(message, type) {
-        var wrapper = document.getElementById('toast-wrapper');
-        wrapper.innerHTML = '';
-
-        var borderColor = type === 'success'
-            ? 'border-cyan-500/40'
-            : 'border-amber-500/40';
-        var iconColor = type === 'success' ? 'text-cyan-400' : 'text-amber-400';
-        var icon = type === 'success'
-            ? '<polyline points="20 6 9 17 4 12"/>'
+        var w = document.getElementById('toast-wrapper');
+        w.innerHTML = '';
+        var bc = (type==='success') ? 'border-cyan-500/40' : 'border-amber-500/40';
+        var ic = (type==='success') ? 'text-cyan-400'      : 'text-amber-400';
+        var p  = (type==='success') ? '<polyline points="20 6 9 17 4 12"/>'
             : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
-
-        var toast = document.createElement('div');
-        toast.id = 'toast';
-        toast.className = 'pointer-events-auto flex items-center gap-3 ' +
-            'bg-slate-900 border ' + borderColor + ' ' +
-            'rounded-2xl shadow-2xl px-5 py-3.5 min-w-[280px] max-w-[400px]';
-
-        toast.innerHTML =
-            '<span class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 ' +
-            'flex items-center justify-center">' +
-            '<svg class="w-3.5 h-3.5 ' + iconColor + '" viewBox="0 0 24 24" fill="none" ' +
-            'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" ' +
-            'stroke-linejoin="round" aria-hidden="true"><' + icon + '></svg></span>' +
-            '<p class="text-slate-200 text-sm leading-snug flex-1">' + message + '</p>' +
-            '<button onclick="dismissToast()" ' +
-            'class="flex-shrink-0 text-slate-600 hover:text-slate-300 transition ml-1 ' +
-            'text-xs leading-none" aria-label="Dismiss">' +
-            '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-            'stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>' +
-            '<line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
-
-        wrapper.appendChild(toast);
-
+        var t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'pointer-events-auto flex items-center gap-3 bg-slate-900 border '+bc+' rounded-2xl shadow-2xl px-5 py-3.5 min-w-[280px] max-w-[400px]';
+        t.innerHTML = '<span class="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center"><svg class="w-3.5 h-3.5 '+ic+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg></span>' +
+            '<p class="text-slate-200 text-sm leading-snug flex-1">'+message+'</p>' +
+            '<button onclick="dismissToast()" class="flex-shrink-0 text-slate-600 hover:text-slate-300 transition ml-1"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+        w.appendChild(t);
         if (_toastTimer) clearTimeout(_toastTimer);
         _toastTimer = setTimeout(dismissToast, 5000);
     }
-
     function dismissToast() {
-        var toast = document.getElementById('toast');
-        if (!toast) return;
-        toast.classList.add('hiding');
-        setTimeout(function () {
-            var w = document.getElementById('toast-wrapper');
-            if (w) w.innerHTML = '';
-        }, 260);
+        var t = document.getElementById('toast');
+        if (!t) return;
+        t.classList.add('hiding');
+        setTimeout(function(){ var w = document.getElementById('toast-wrapper'); if (w) w.innerHTML=''; }, 260);
     }
 
-    // ── Warn on unsaved changes ───────────────────────────────────────────────
-    window.addEventListener('beforeunload', function (e) {
-        if (_dirty) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
+    // ── beforeunload guard ───────────────────────────────────────────────────────────
+    window.addEventListener('beforeunload', function(e) {
+        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 
-    // ── Init ──────────────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', initHub);
+    // ── Init ──────────────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('pref-lang').addEventListener('change', markDirty);
+        _loadSession();
+        if (_session.token) { hideAuthGate(); renderHub(); }
+        else                { showAuthGate(); }
+    });
     </script>
 
 </body>

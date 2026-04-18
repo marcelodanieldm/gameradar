@@ -24,14 +24,18 @@ Uso Power BI:
 from __future__ import annotations
 
 import asyncio
+import base64
 import csv
 import email.mime.multipart
 import email.mime.text
+import hashlib
+import hmac
 import json
 import os
 import pathlib
 import random
 import re
+import secrets
 import smtplib
 import subprocess
 import sys
@@ -40,7 +44,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
@@ -742,6 +746,110 @@ _CANCELLATION_EMAIL_TMPL = BASE_DIR / "templates" / "cancellation_email.html"
 _RESUBSCRIBE_URL  = os.environ.get("RESUBSCRIBE_URL", "https://gameradar.ai/#rookie")
 _FEEDBACK_URL     = os.environ.get("FEEDBACK_URL",    "https://gameradar.ai/feedback")
 
+# ── Hub access token ──────────────────────────────────────────────────────────
+# Ephemeral HMAC-SHA256 signed token: base64(email|expires_ts).signature
+# customer_id is NEVER included — stays server-side only.
+# Set HUB_TOKEN_SECRET in .env. If absent, a random secret is generated per
+# process start (tokens won't survive API restarts — acceptable for dev).
+_HUB_TOKEN_SECRET: str = os.environ.get("HUB_TOKEN_SECRET", "").strip()
+if not _HUB_TOKEN_SECRET:
+    _HUB_TOKEN_SECRET = secrets.token_hex(32)
+
+_TOKEN_TTL_SECONDS: int = 86_400   # 24 h
+
+# Whitelists — validated server-side on every preferences write
+_CANONICAL_REGIONS: set = {
+    "India", "Korea LCK", "Vietnam VCS", "Thailand",
+    "China LPL", "Asia Pacific", "Japan LJL", "Global",
+}
+_VALID_LANGS: set = {"en", "es", "pt", "ko", "zh", "ja", "vi"}
+
+
+def _make_hub_token(email: str) -> str:
+    """Issue a short-lived signed token. Payload: email|unix_expiry."""
+    expires_at  = int(time.time()) + _TOKEN_TTL_SECONDS
+    payload     = f"{email.lower()}|{expires_at}"
+    payload_b64 = base64.urlsafe_b64encode(payload.encode()).decode()
+    sig = hmac.new(
+        _HUB_TOKEN_SECRET.encode(),
+        payload_b64.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{payload_b64}.{sig}"
+
+
+def _verify_hub_token(token: str) -> Optional[str]:
+    """Verify token signature and expiry. Returns email or None."""
+    try:
+        payload_b64, sig = token.rsplit(".", 1)
+    except ValueError:
+        return None
+    expected = hmac.new(
+        _HUB_TOKEN_SECRET.encode(),
+        payload_b64.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    # Timing-safe comparison (OWASP A02)
+    if not hmac.compare_digest(sig, expected):
+        return None
+    try:
+        # Add padding so urlsafe_b64decode never raises
+        padded  = payload_b64 + "==" * ((4 - len(payload_b64) % 4) % 4)
+        payload = base64.urlsafe_b64decode(padded).decode()
+        email, exp_str = payload.rsplit("|", 1)
+        if int(exp_str) < int(time.time()):
+            return None
+        return email
+    except Exception:
+        return None
+
+
+def _update_subscriber_preferences(
+    email:       str,
+    region_plan: str,
+    language:    str,
+    csv_path:    pathlib.Path,
+) -> bool:
+    """
+    Atomically update region_plan and language for a subscriber.
+    Thread-safe via _csv_lock. Returns True if the email was found.
+    """
+    if not csv_path.exists():
+        return False
+
+    all_rows:   List[Dict[str, Any]] = []
+    fieldnames: List[str]            = []
+    found = False
+
+    with _csv_lock:
+        with csv_path.open(newline="", encoding="utf-8") as fh:
+            reader     = csv.DictReader(fh)
+            fieldnames = list(reader.fieldnames or [])
+            all_rows   = list(reader)
+
+        if not fieldnames:
+            return False
+
+        if "language" not in fieldnames:
+            fieldnames.append("language")
+
+        for row in all_rows:
+            if row.get("email", "").strip().lower() == email:
+                row["region_plan"] = _csv_safe(region_plan)
+                row["language"]    = _csv_safe(language)
+                found = True
+
+        if not found:
+            return False
+
+        with csv_path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(all_rows)
+
+    logger.info(f"Preferences updated: {email} → region={region_plan} lang={language}")
+    return True
+
 
 def _send_cancellation_email(
     to_email:     str,
@@ -1040,6 +1148,125 @@ async def stripe_webhook(request: Request) -> Dict[str, Any]:
 
     # ── Acknowledge all other events (Stripe expects 200 for all events) ──────
     return {"received": True, "event": event_type}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Subscriber Hub — auth + preferences
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class HubAuthIn(BaseModel):
+    email: str
+
+
+@app.post("/subscriber/auth", summary="Verify subscriber email and issue hub access token")
+async def subscriber_auth(payload: HubAuthIn) -> Dict[str, Any]:
+    """
+    Looks up the email in subscribers.csv (populated by Stripe checkout).
+    If found and Active, issues a short-lived HMAC token for hub access.
+
+    The Stripe customer_id is NEVER returned to the browser.
+    Token TTL: 24 h. Store in sessionStorage, not localStorage.
+    """
+    email = payload.email.strip().lower()[:254]
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+
+    if not SUBSCRIBERS_PATH.exists():
+        # Return same error as not-found to avoid email enumeration (OWASP A07)
+        raise HTTPException(status_code=404, detail="No active subscription found for this email")
+
+    subscriber: Optional[Dict[str, Any]] = None
+    with _csv_lock:
+        try:
+            with SUBSCRIBERS_PATH.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    if row.get("email", "").strip().lower() == email:
+                        subscriber = dict(row)
+                        break
+        except Exception as exc:
+            logger.error(f"subscriber_auth: CSV read error: {exc}")
+            raise HTTPException(status_code=500, detail="Internal error")
+
+    # Uniform error for not-found AND inactive — prevent user enumeration
+    if not subscriber or subscriber.get("status", "Active").strip().lower() == "inactive":
+        raise HTTPException(
+            status_code=404,
+            detail="No active subscription found for this email",
+        )
+
+    token = _make_hub_token(email)
+    logger.info(f"Hub token issued for {email}")
+    return {
+        "token":       token,
+        "email":       email,
+        "region_plan": subscriber.get("region_plan", "Global"),
+        "language":    subscriber.get("language",    "en"),
+        "expires_in":  _TOKEN_TTL_SECONDS,
+    }
+
+
+class PreferencesIn(BaseModel):
+    email:       str
+    region_plan: str
+    language:    str = "en"
+
+
+@app.post("/subscriber/preferences", summary="Update subscriber region and language preferences")
+async def update_preferences(
+    payload:       PreferencesIn,
+    authorization: Optional[str] = Header(None),
+) -> Dict[str, Any]:
+    """
+    Persists region_plan and language to subscribers.csv.
+    Requires a valid Bearer token from POST /subscriber/auth.
+    Changes are applied on the next weekly delivery run.
+    """
+    # ── 1. Verify Bearer token ────────────────────────────────────────────────
+    raw_token = None
+    if authorization and authorization.startswith("Bearer "):
+        raw_token = authorization[7:]
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="Missing authorization token")
+
+    token_email = _verify_hub_token(raw_token)
+    if not token_email:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    # ── 2. Token must match payload email (block privilege escalation) ────────
+    request_email = payload.email.strip().lower()[:254]
+    if not _EMAIL_RE.match(request_email):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    if token_email != request_email:
+        raise HTTPException(status_code=403, detail="Token does not match email")
+
+    # ── 3. Validate region against canonical whitelist ────────────────────────
+    if payload.region_plan not in _CANONICAL_REGIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid region_plan. Allowed: {sorted(_CANONICAL_REGIONS)}",
+        )
+
+    # ── 4. Validate language ──────────────────────────────────────────────────
+    if payload.language not in _VALID_LANGS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid language. Allowed: {sorted(_VALID_LANGS)}",
+        )
+
+    # ── 5. Persist to subscribers.csv ─────────────────────────────────────────
+    updated = _update_subscriber_preferences(
+        request_email, payload.region_plan, payload.language, SUBSCRIBERS_PATH,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Subscriber not found")
+
+    return {
+        "status":      "updated",
+        "email":       request_email,
+        "region_plan": payload.region_plan,
+        "language":    payload.language,
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
