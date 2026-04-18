@@ -81,8 +81,16 @@ SYNC_LOG_PATH       = BASE_DIR / "reports" / "subscriber_sync_log.csv"
 CANCELLATIONS_LOG   = BASE_DIR / "reports" / "cancellations_log.csv"
 CHURN_LOG_PATH      = BASE_DIR / "reports" / "churn_logs.csv"
 
-# status/language are the last fields — existing rows without them default to Active/en
-_CSV_FIELDNAMES = ["email", "region_plan", "messenger", "plan", "source", "subscribed_at", "status", "language"]
+# Column layout:
+#   region_plan     — original Stripe subscription region (immutable billing key)
+#   active_region   — current delivery region (may differ after Hub preference update)
+#   target_language — report language chosen in the Hub (ISO 639-1 code)
+#   status/active_region/target_language are added on-the-fly for legacy CSVs
+_CSV_FIELDNAMES = [
+    "email", "region_plan", "messenger", "plan",
+    "source", "subscribed_at", "status",
+    "active_region", "target_language",
+]
 
 _STATUS_ACTIVE   = "Active"
 _STATUS_INACTIVE = "Inactive"
@@ -353,9 +361,12 @@ def append_subscribers(
             )
             if not file_exists:
                 writer.writeheader()
-            # Stamp every new subscriber as Active
+            # Stamp every new subscriber: Active status, region mirrors subscription,
+            # language defaults to English until the subscriber changes it in the Hub.
             for sub in new_subs:
-                sub.setdefault("status", _STATUS_ACTIVE)
+                sub.setdefault("status",          _STATUS_ACTIVE)
+                sub.setdefault("active_region",   sub.get("region_plan", "Global"))
+                sub.setdefault("target_language", "en")
             writer.writerows(new_subs)
 
     return len(new_subs)
@@ -473,10 +484,11 @@ def handle_cancellations(
         logger.error(f"Failed to read {csv_path}: {exc}")
         return 0
 
-    # Ensure 'status' column exists in fieldnames (backwards compat)
+    # Ensure new columns exist in fieldnames (backwards compat with older CSVs)
     write_fieldnames = original_fieldnames[:]
-    if "status" not in write_fieldnames:
-        write_fieldnames.append("status")
+    for _col in ("status", "active_region", "target_language"):
+        if _col not in write_fieldnames:
+            write_fieldnames.append(_col)
 
     # ── Identify rows to deactivate ───────────────────────────────────────────
     to_deactivate: list[dict] = []
@@ -490,6 +502,11 @@ def handle_cancellations(
             row["status"] = _STATUS_INACTIVE
         elif not row.get("status"):
             row["status"] = _STATUS_ACTIVE   # back-fill missing status
+        # Back-fill new preference columns for any rows that pre-date the schema change
+        if not row.get("active_region"):
+            row["active_region"] = row.get("region_plan", "Global")
+        if not row.get("target_language"):
+            row["target_language"] = "en"
 
     if not to_deactivate:
         logger.info("All cancelled emails are already marked Inactive — nothing to do")
@@ -545,6 +562,7 @@ def _append_to_churn_log(
         "cancelled_at",
         "email", "region_plan", "messenger", "plan",
         "source", "subscribed_at", "status",
+        "active_region", "target_language",
     ]
 
     with churn_path.open("a", newline="", encoding="utf-8") as fh:
@@ -564,6 +582,95 @@ def _append_to_churn_log(
     logger.success(
         f"Archived {len(rows)} churned subscriber(s) → {churn_path.name}"
     )
+
+
+def update_preferences(
+    email:           str,
+    active_region:   str,
+    target_language: str,
+    csv_path:        pathlib.Path,
+    dry_run:         bool = False,
+) -> bool:
+    """
+    Update active_region and target_language for a subscriber in subscribers.csv.
+
+    Called by the Hub webhook (POST /subscriber/preferences) when the user changes
+    their scouting region or report language.  The original region_plan (Stripe
+    subscription region, used for billing) is intentionally left untouched.
+
+    Thread-safe via _csv_write_lock.  Returns True if the email was found.
+
+    Data-integrity guarantee
+    ------------------------
+    Only active_region and target_language are written; region_plan is never
+    overwritten here.  delivery.py uses active_region exclusively to determine
+    which report PDF to generate and send — so no subscriber can receive a
+    report for the wrong region after a preference update.
+    """
+    if not csv_path.exists():
+        logger.warning(f"update_preferences: {csv_path} not found")
+        return False
+
+    # Validate inputs before touching the file
+    if active_region not in {
+        "India", "Korea LCK", "Vietnam VCS", "Thailand",
+        "China LPL", "Asia Pacific", "Japan LJL", "Global",
+    }:
+        logger.error(f"update_preferences: invalid active_region '{active_region}'")
+        return False
+    if target_language not in {"en", "es", "pt", "ko", "zh", "ja", "vi"}:
+        logger.error(f"update_preferences: invalid target_language '{target_language}'")
+        return False
+
+    all_rows:   list[dict] = []
+    fieldnames: list[str]  = []
+
+    with _csv_write_lock:
+        with csv_path.open(newline="", encoding="utf-8") as fh:
+            reader     = csv.DictReader(fh)
+            fieldnames = list(reader.fieldnames or [])
+            all_rows   = list(reader)
+
+        if not fieldnames:
+            return False
+
+        # Add new columns if this CSV pre-dates the schema change
+        for col in ("active_region", "target_language"):
+            if col not in fieldnames:
+                fieldnames.append(col)
+
+        email_norm = email.strip().lower()
+        found      = False
+        for row in all_rows:
+            if row.get("email", "").strip().lower() == email_norm:
+                row["active_region"]   = _csv_safe(active_region)
+                row["target_language"] = _csv_safe(target_language)
+                found = True
+                break          # emails are unique — stop after first match
+
+        if not found:
+            logger.warning(f"update_preferences: email not found — {email}")
+            return False
+
+        if dry_run:
+            logger.info(
+                f"[DRY-RUN] Would update {email}: "
+                f"active_region={active_region!r} target_language={target_language!r}"
+            )
+            return True
+
+        with csv_path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(
+                fh, fieldnames=fieldnames, extrasaction="ignore"
+            )
+            writer.writeheader()
+            writer.writerows(all_rows)
+
+    logger.success(
+        f"Preferences updated: {email} → "
+        f"active_region={active_region!r}  target_language={target_language!r}"
+    )
+    return True
 
 
 def validate_assignments(subs: list[dict]) -> None:

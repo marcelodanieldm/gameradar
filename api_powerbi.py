@@ -805,13 +805,14 @@ def _verify_hub_token(token: str) -> Optional[str]:
 
 
 def _update_subscriber_preferences(
-    email:       str,
-    region_plan: str,
-    language:    str,
-    csv_path:    pathlib.Path,
+    email:           str,
+    active_region:   str,
+    target_language: str,
+    csv_path:        pathlib.Path,
 ) -> bool:
     """
-    Atomically update region_plan and language for a subscriber.
+    Atomically update active_region and target_language for a subscriber.
+    The original region_plan (Stripe subscription region) is preserved.
     Thread-safe via _csv_lock. Returns True if the email was found.
     """
     if not csv_path.exists():
@@ -830,13 +831,15 @@ def _update_subscriber_preferences(
         if not fieldnames:
             return False
 
-        if "language" not in fieldnames:
-            fieldnames.append("language")
+        if "active_region" not in fieldnames:
+            fieldnames.append("active_region")
+        if "target_language" not in fieldnames:
+            fieldnames.append("target_language")
 
         for row in all_rows:
             if row.get("email", "").strip().lower() == email:
-                row["region_plan"] = _csv_safe(region_plan)
-                row["language"]    = _csv_safe(language)
+                row["active_region"]   = _csv_safe(active_region)
+                row["target_language"] = _csv_safe(target_language)
                 found = True
 
         if not found:
@@ -847,7 +850,7 @@ def _update_subscriber_preferences(
             writer.writeheader()
             writer.writerows(all_rows)
 
-    logger.info(f"Preferences updated: {email} → region={region_plan} lang={language}")
+    logger.info(f"Preferences updated: {email} → active_region={active_region} lang={target_language}")
     return True
 
 

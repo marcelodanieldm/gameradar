@@ -164,8 +164,9 @@ _EMAIL_RE = re.compile(
 
 
 class Subscriber(NamedTuple):
-    email:       str
-    region_plan: str
+    email:           str
+    region_plan:     str   # effective delivery region (active_region ?? original region_plan)
+    target_language: str   # ISO 639-1 code, e.g. "en", "ko", "es"
 
 
 def _validate_email(email: str) -> bool:
@@ -186,7 +187,14 @@ def load_subscribers(csv_path: pathlib.Path) -> list[Subscriber]:
     Parse subscribers.csv and return validated Subscriber records.
 
     Expected columns: email, region_plan  (header row required).
-    Rows with invalid email format are skipped and logged as warnings.
+    Optional columns: active_region, target_language, language, status.
+
+    Data-integrity rule
+    -------------------
+    If a row has a non-empty active_region (set via Hub preference update),
+    it is used as the effective delivery region instead of region_plan.  This
+    prevents sending an India report to someone who switched to Korea LCK in
+    the subscriber Hub.  The override is logged at INFO level for auditing.
     """
     if not csv_path.exists():
         logger.error(
@@ -246,7 +254,29 @@ def load_subscribers(csv_path: pathlib.Path) -> list[Subscriber]:
                 )
                 region_plan = "Global"
 
-            subscribers.append(Subscriber(email=email, region_plan=region_plan))
+            # ── Data-integrity: prefer active_region over region_plan ─────────
+            active_region = row.get("active_region", "").strip()
+            if active_region and active_region.lower() != region_plan.lower():
+                logger.info(
+                    f"Row {i}: {email} — active_region '{active_region}' "
+                    f"overrides region_plan '{region_plan}' (Hub preference)"
+                )
+                effective_region = active_region
+            else:
+                effective_region = active_region or region_plan
+
+            # ── Language preference: target_language > language column > "en" ─
+            target_language = (
+                row.get("target_language", "").strip()
+                or row.get("language", "").strip()
+                or "en"
+            )
+
+            subscribers.append(Subscriber(
+                email           = email,
+                region_plan     = effective_region,
+                target_language = target_language,
+            ))
 
     logger.info(
         f"Loaded {len(subscribers)} valid subscriber(s) "
