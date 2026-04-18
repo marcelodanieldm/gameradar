@@ -87,32 +87,38 @@
                          font-size:13px;color:#38bdf8;
                          font-weight:600;letter-spacing:2px;
                          text-transform:uppercase;">
-                Welcome aboard
+                Welcome to the Future of Scouting
               </p>
               <h1 style="margin:0 0 20px;
                           font-size:28px;font-weight:700;
                           color:#f1f5f9;line-height:1.2;">
-                Hello, {{ user_name }}
+                Hello, {{ user_name }}!
               </h1>
+              <p style="margin:0 0 16px;
+                         font-size:15px;color:#94a3b8;line-height:1.7;">
+                Welcome to <strong style="color:#f1f5f9;">GameRadar AI</strong>.
+                You've just unlocked the most powerful, data-driven edge in the
+                Asian esports market.
+              </p>
               <p style="margin:0 0 28px;
                          font-size:15px;color:#94a3b8;line-height:1.7;">
-                Your <strong style="color:#f1f5f9;">GameRadar AI</strong>
-                account is now active. You have been enrolled in the
-                <strong style="color:#38bdf8;">Rookie Plan</strong>{% if region_plan %}&nbsp;for
-                <strong style="color:#38bdf8;">{{ region_plan }}</strong>{% endif %}.
-                Weekly scouting reports will be delivered directly to this inbox.
+                By joining our <strong style="color:#38bdf8;">Rookie Plan</strong>{% if region_plan %}&nbsp;for
+                <strong style="color:#38bdf8;">{{ region_plan }}</strong>{% endif %},
+                you are no longer scouting in the dark. You now have an
+                <strong style="color:#f1f5f9;">"eye"</strong> inside the most
+                competitive servers in the world.
               </p>
 
               <!-- Divider -->
               <div style="height:1px;background:linear-gradient(to right,#1e3a5f,#38bdf8,#1e3a5f);
                            margin-bottom:32px;"></div>
 
-              <!-- WHAT YOU GET section -->
+              <!-- WHAT HAPPENS NEXT section -->
               <p style="margin:0 0 20px;
                          font-size:12px;color:#64748b;
                          letter-spacing:2px;text-transform:uppercase;
                          font-weight:600;">
-                What's included
+                What happens next?
               </p>
 
               <!-- Feature rows -->
@@ -147,8 +153,47 @@
               </table>
               {% endfor %}
 
-              <!-- Spacer -->
-              <div style="height:32px;"></div>
+              <!-- Sample report notice -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                     style="margin-bottom:16px;background-color:#0a1628;
+                            border:1px solid #1e3a5f;border-left:3px solid #38bdf8;
+                            border-radius:8px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#f1f5f9;">
+                      &#128206;&nbsp;&nbsp;Sample Report Attached
+                    </p>
+                    <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
+                      Attached to this email you'll find a
+                      <strong style="color:#94a3b8;">Sample Report</strong>
+                      so you can see exactly how to read the metrics before your
+                      first official delivery arrives.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Chosen region + next delivery -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                     style="margin-bottom:32px;background-color:#0a1628;
+                            border:1px solid #1e3a5f;border-radius:8px;">
+                <tr>
+                  <td width="50%" style="padding:16px 18px;border-right:1px solid #1e3a5f;">
+                    <p style="margin:0 0 4px;font-size:10px;color:#475569;
+                               letter-spacing:1.5px;text-transform:uppercase;">Your Chosen Region</p>
+                    <p style="margin:0;font-size:14px;font-weight:700;color:#38bdf8;">
+                      {{ region_plan if region_plan else "Global" }}
+                    </p>
+                  </td>
+                  <td width="50%" style="padding:16px 18px;">
+                    <p style="margin:0 0 4px;font-size:10px;color:#475569;
+                               letter-spacing:1.5px;text-transform:uppercase;">Next Delivery</p>
+                    <p style="margin:0;font-size:14px;font-weight:700;color:#38bdf8;">
+                      {{ next_delivery }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
               <!-- CTA BUTTON -->
               <table role="presentation" cellpadding="0" cellspacing="0">
@@ -253,6 +298,8 @@
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="font-size:11px;color:#334155;line-height:1.7;">
+                    <strong style="color:#f1f5f9;">Marcelo &amp; The GameRadar AI Team</strong><br>
+                    <span style="color:#38bdf8;font-style:italic;">Scouting Simplified. Talent Magnified.</span><br><br>
                     <strong style="color:#38bdf8;">GameRadar AI</strong>
                     &copy; {{ year }}&nbsp;&nbsp;|&nbsp;&nbsp;
                     Scouting Intelligence Platform<br>

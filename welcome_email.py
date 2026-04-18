@@ -81,42 +81,36 @@ OUTPUT_DIR   = BASE_DIR / "reports"
 # SECTION 1 — TEMPLATE CONTEXT
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Default features shown in the "What's included" block
+# Default features shown in the "What happens next?" block
 _DEFAULT_FEATURES = [
     {
-        "icon":        "📊",
+        "icon":        "📅",
         "color":       "38bdf8",   # cyan
-        "title":       "Regional Top 10 Rankings",
-        "description": "Weekly GameRadar AI scores — KDA, Win Rate and Match "
-                       "Frequency combined into a single ranking.",
-    },
-    {
-        "icon":        "⭐",
-        "color":       "fbbf24",   # amber
-        "title":       "Rising Stars Report",
-        "description": "Three breakout players to watch each week, sourced from "
-                       "local ladder data across Asia Pacific regions.",
+        "title":       "Your Weekly Radar",
+        "description": "Every Monday at 08:00 UTC, you will receive a custom "
+                       "Intelligence PDF Report directly in your inbox.",
     },
     {
         "icon":        "🌐",
         "color":       "a855f7",   # purple
-        "title":       "Market Intelligence",
-        "description": "Translated insights from Wanplus, TEC India and regional "
-                       "forums — auto-translated by our NLP pipeline.",
+        "title":       "The Data",
+        "description": "We've already started scraping and translating live data "
+                       "from Wanplus (China), Dak.gg (Korea), and The Esports Club "
+                       "(India) — just for you.",
     },
     {
-        "icon":        "📄",
+        "icon":        "🧠",
         "color":       "34d399",   # green
-        "title":       "PDF Scouting Reports",
-        "description": "Full-colour PDF delivered to your inbox every week, "
-                       "ready to share with your coaching staff.",
+        "title":       "The GameRadar Score",
+        "description": "Our scores are normalized. A '90' in Korea is compared "
+                       "scientifically to an '85' in Vietnam. Trust the math.",
     },
 ]
 
 # Default next-steps list
 _DEFAULT_STEPS = [
-    "Check your inbox every Monday for your weekly scouting report.",
-    "Open the attached PDF in any modern PDF reader for the full report.",
+    "Check your inbox every Monday at 08:00 UTC for your weekly Intelligence PDF Report.",
+    "Open the attached Sample Report to learn how to read the metrics before your first delivery.",
     "Reply to this email to request a custom region or player deep-dive.",
     "Follow @GameRadarAI for real-time alerts and patch analysis.",
 ]
@@ -144,7 +138,13 @@ def _build_context(
     All values have sensible defaults so the only required fields are
     user_name and user_email.
     """
-    now = datetime.now(timezone.utc)
+    from datetime import date, timedelta
+    now   = datetime.now(timezone.utc)
+    today = now.date()
+    # Next Monday (same day counts as next week so delivery is always in the future)
+    days_until_monday = (7 - today.weekday()) % 7 or 7
+    next_mon = today + timedelta(days=days_until_monday)
+    next_delivery = next_mon.strftime("%B %d, %Y") + " at 08:00 UTC"
 
     return {
         "user_name":      user_name.strip() or "Scout",
@@ -155,6 +155,7 @@ def _build_context(
         # steps: list of (index, text) tuples for numbered rendering
         "steps":          list(enumerate((steps or _DEFAULT_STEPS), start=1)),
         "stats":          stats or _DEFAULT_STATS,
+        "next_delivery":  next_delivery,
         "registered_at":  now.strftime("%b %d, %Y %H:%M UTC"),
         "year":           now.year,
     }
@@ -264,13 +265,15 @@ def _build_mime(
     html_body:   str,
     from_addr:   str,
     region_plan: str,
+    user_name:   str = "",
 ) -> MIMEMultipart:
     """Build a MIME multipart/alternative message with an HTML body."""
     safe_to     = _sanitise_header(to_email)
     safe_region = _sanitise_header(region_plan) if region_plan else "Plan Rookie"
     safe_from   = _sanitise_header(from_addr)
+    safe_name   = _sanitise_header(user_name) if user_name else "Scout"
 
-    subject = f"Welcome to GameRadar AI — {safe_region}"
+    subject = f"\u26a1 Welcome to the Future of Scouting, {safe_name}!"
 
     msg = MIMEMultipart("alternative")
     msg["From"]    = safe_from
@@ -280,9 +283,14 @@ def _build_mime(
     # Plain-text fallback (brief, for spam-score improvement)
     plain = (
         f"Welcome to GameRadar AI — {safe_region}\n\n"
-        "Your Plan Rookie account is now active. "
-        "Weekly scouting reports will be delivered to your inbox.\n\n"
-        "GameRadar AI Scouting Intelligence Platform\n"
+        f"Hello {safe_name},\n\n"
+        "Welcome to GameRadar AI. You've just unlocked the most powerful, "
+        "data-driven edge in the Asian esports market.\n\n"
+        "Your Weekly Radar: Every Monday at 08:00 UTC, you will receive a "
+        "custom Intelligence PDF Report in your inbox.\n\n"
+        "Stop guessing. Start scouting with Neural Intelligence.\n\n"
+        "Marcelo & The GameRadar AI Team\n"
+        "Scouting Simplified. Talent Magnified.\n"
     )
     msg.attach(MIMEText(plain, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
@@ -360,7 +368,7 @@ def send_welcome_email(
     if dry_run:
         logger.info("[DRY-RUN] Email rendered — no SMTP call made")
         logger.info(f"[DRY-RUN]  To      : {user_email}")
-        logger.info(f"[DRY-RUN]  Subject : Welcome to GameRadar AI — {region_plan or 'Plan Rookie'}")
+        logger.info(f"[DRY-RUN]  Subject : \u26a1 Welcome to the Future of Scouting, {user_name}!")
         logger.info(f"[DRY-RUN]  Length  : {len(html_body):,} chars")
         return True
 
@@ -377,6 +385,7 @@ def send_welcome_email(
         html_body   = html_body,
         from_addr   = smtp["from_addr"],
         region_plan = region_plan,
+        user_name   = user_name,
     )
 
     # Send with exponential-backoff retry
