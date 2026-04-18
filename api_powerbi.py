@@ -25,11 +25,14 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import email.mime.multipart
+import email.mime.text
 import json
 import os
 import pathlib
 import random
 import re
+import smtplib
 import subprocess
 import sys
 import threading
@@ -729,12 +732,91 @@ async def on_shutdown() -> None:
 #
 # POST /stripe/webhook
 #   Receives signed Stripe webhook events (configured in Stripe Dashboard).
-#   Handles customer.subscription.deleted → log + mark cancellation.
+#   Handles customer.subscription.deleted → log + mark cancellation + send email.
 #   Signature verified with STRIPE_WEBHOOK_SECRET (OWASP A02 — auth).
 # ──────────────────────────────────────────────────────────────────────────────
 
 _PORTAL_RETURN_URL = os.environ.get("PORTAL_RETURN_URL", "http://localhost:8000")
 _CANCELLATIONS_LOG = BASE_DIR / "reports" / "cancellations_log.csv"
+_CANCELLATION_EMAIL_TMPL = BASE_DIR / "templates" / "cancellation_email.html"
+_RESUBSCRIBE_URL  = os.environ.get("RESUBSCRIBE_URL", "https://gameradar.ai/#rookie")
+_FEEDBACK_URL     = os.environ.get("FEEDBACK_URL",    "https://gameradar.ai/feedback")
+
+
+def _send_cancellation_email(
+    to_email:     str,
+    user_name:    str,
+    region_plan:  str,
+    cancelled_at: str,
+    access_until: str,
+) -> None:
+    """
+    Send a Jinja2-rendered cancellation confirmation email via SMTP.
+    Uses the same SMTP env vars as delivery.py.
+    Silent no-op if SMTP is not configured (avoids blocking the webhook response).
+    """
+    smtp_user = os.environ.get("SMTP_USER", "").strip()
+    smtp_pass = os.environ.get("SMTP_PASSWORD", "").strip()
+    if not smtp_user or not smtp_pass:
+        logger.debug("SMTP not configured — cancellation email skipped")
+        return
+
+    # Load template
+    try:
+        tmpl_src = _CANCELLATION_EMAIL_TMPL.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        logger.warning(f"Cancellation email template not found: {_CANCELLATION_EMAIL_TMPL}")
+        return
+
+    # Minimal Jinja2-style variable substitution (no Jinja2 dependency needed)
+    year = datetime.now(timezone.utc).year
+    html = (
+        tmpl_src
+        .replace("{{ user_name }}",     user_name or to_email.split("@")[0])
+        .replace("{{ region_plan }}",   region_plan or "")
+        .replace("{{ cancelled_at }}",  cancelled_at)
+        .replace("{{ access_until }}",  access_until)
+        .replace("{{ resubscribe_url }}", _RESUBSCRIBE_URL)
+        .replace("{{ feedback_url }}",   _FEEDBACK_URL)
+        .replace("{{ year }}",           str(year))
+        # Jinja2 conditionals — strip the tags, keep inner text when region_plan present
+        .replace("{% if region_plan %}", "")
+        .replace("{% endif %}",          "")
+    )
+
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com").strip()
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    from_addr = os.environ.get("SMTP_FROM", smtp_user).strip()
+    use_ssl   = os.environ.get("SMTP_SSL", "false").lower() == "true"
+
+    subject = f"Subscription Cancelled - We'll miss you, {user_name or to_email.split('@')[0]}"
+    # Sanitise against header injection (OWASP A03 — CWE-93)
+    subject  = re.sub(r"[\r\n]", "", subject)
+    from_hdr = re.sub(r"[\r\n]", "", from_addr)
+    to_hdr   = re.sub(r"[\r\n]", "", to_email)
+
+    msg = email.mime.multipart.MIMEMultipart("alternative")
+    msg["From"]    = from_hdr
+    msg["To"]      = to_hdr
+    msg["Subject"] = subject
+    msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
+
+    try:
+        if use_ssl:
+            conn = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20)
+        else:
+            conn = smtplib.SMTP(smtp_host, smtp_port, timeout=20)
+            conn.ehlo()
+            conn.starttls()
+            conn.ehlo()
+        conn.login(smtp_user, smtp_pass)
+        conn.sendmail(from_addr, [to_email], msg.as_bytes())
+        conn.quit()
+        logger.success(f"Cancellation email sent → {to_email}")
+    except smtplib.SMTPAuthenticationError:
+        logger.error("SMTP auth failed — cancellation email not sent")
+    except Exception as exc:
+        logger.error(f"Cancellation email failed for {to_email}: {exc}")
 
 
 class PortalSessionIn(BaseModel):
@@ -913,6 +995,46 @@ async def stripe_webhook(request: Request) -> Dict[str, Any]:
             )
         except Exception as exc:
             logger.error(f"Failed to write cancellation log: {exc}")
+
+        # ── Send cancellation confirmation email (best-effort) ────────────
+        if email:
+            # Resolve access_until from subscription period end (Stripe field)
+            try:
+                period_end_ts = (
+                    sub_obj.get("current_period_end")
+                    if isinstance(sub_obj, dict)
+                    else getattr(sub_obj, "current_period_end", None)
+                )
+                if period_end_ts:
+                    access_until = datetime.fromtimestamp(
+                        int(period_end_ts), tz=timezone.utc
+                    ).strftime("%B %d, %Y")
+                else:
+                    access_until = "end of billing period"
+            except Exception:
+                access_until = "end of billing period"
+
+            # Resolve subscriber name and region from subscribers.csv (best-effort)
+            user_name   = ""
+            region_plan = ""
+            try:
+                if SUBSCRIBERS_PATH.exists():
+                    with SUBSCRIBERS_PATH.open(newline="", encoding="utf-8") as fh:
+                        for row in csv.DictReader(fh):
+                            if row.get("email", "").strip().lower() == email.lower():
+                                region_plan = row.get("region_plan", "")
+                                # Use messenger handle as display name if available
+                                user_name = row.get("messenger", "") or ""
+                                break
+            except Exception:
+                pass
+
+            # Fire in a background thread — never block the webhook 200 response
+            threading.Thread(
+                target=_send_cancellation_email,
+                args=(email, user_name, region_plan, cancelled_at, access_until),
+                daemon=True,
+            ).start()
 
         return {"received": True, "event": event_type, "subscription": sub_id}
 
