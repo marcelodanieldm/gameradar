@@ -993,7 +993,7 @@ class StrategicAdapterFactory:
     def _get_all_adapters(cls) -> Dict[str, type]:
         """Devuelve adapters base + los registrados desde AsiaAdapters."""
         try:
-            from AsiaAdapters import ASIA_ADAPTERS
+            from scraping.asia_adapters import ASIA_ADAPTERS
             return {**cls._adapters, **ASIA_ADAPTERS}
         except ImportError:
             return cls._adapters
@@ -1015,7 +1015,7 @@ class StrategicAdapterFactory:
 
         # Merge kwargs especiales definidos en AsiaAdapters
         try:
-            from AsiaAdapters import ASIA_ADAPTER_KWARGS
+            from scraping.asia_adapters import ASIA_ADAPTER_KWARGS
             extra = ASIA_ADAPTER_KWARGS.get(source, {})
             kwargs = {**extra, **kwargs}
         except ImportError:

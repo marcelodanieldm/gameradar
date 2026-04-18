@@ -64,8 +64,6 @@ jobs:
     env:
       PYTHONUNBUFFERED: "1"
       PYTHONWARNINGS: "ignore:Unverified HTTPS request"
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
@@ -128,7 +126,7 @@ jobs:
           python - <<'PYEOF'
           import sys
           failed = []
-          for mod in ["StrategicAdapters", "AsiaAdapters", "ingest_bronze_targets"]:
+          for mod in ["scraping.strategic_adapters", "scraping.asia_adapters", "ingest_bronze_targets"]:
               try:
                   __import__(mod)
                   print(f"  ✅  {mod}")

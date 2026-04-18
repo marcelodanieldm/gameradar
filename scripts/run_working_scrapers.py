@@ -1,13 +1,15 @@
-"""
-Script para ejecutar solo los scrapers que funcionan correctamente
-Incluye: Bronze Ingestion (Liquipedia) y CNN Brasil Ninja Scraper
-"""
+"""Ejecuta los scrapers funcionales disponibles en la estructura nueva."""
 import asyncio
-from loguru import logger
 from datetime import datetime
+import pathlib
+import sys
 
-from bronze_ingestion import BronzeIngestionScraper
-from cnn_brasil_scraper import CNNBrasilNinjaScraper
+from loguru import logger
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from ingestion.ingest_bronze_targets import main as run_ingestion_targets
+from scraping.cnn_brasil_scraper import CNNBrasilNinjaScraper
 
 
 async def run_bronze_ingestion():
@@ -17,16 +19,8 @@ async def run_bronze_ingestion():
     logger.info("=" * 80)
     
     try:
-        async with BronzeIngestionScraper(region="KR", headless=True) as scraper:
-            # Scrapear de Liquipedia
-            await scraper.run_ingestion(
-                source="liquipedia",
-                game="leagueoflegends",
-                limit=50  # Aumentado a 50 jugadores
-            )
-            
-            logger.success("✅ Bronze ingestion completado exitosamente")
-            
+        await run_ingestion_targets(sources=["liquipedia"], dry_run=False)
+        logger.success("✅ Bronze ingestion completado exitosamente")
     except Exception as e:
         logger.error(f"❌ Error en bronze ingestion: {e}")
         raise

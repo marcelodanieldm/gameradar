@@ -39,7 +39,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from StrategicAdapters import (
+from scraping.strategic_adapters import (
     AdvancedHeaderRotator,
     BaseStrategicAdapter,
     DataPriority,

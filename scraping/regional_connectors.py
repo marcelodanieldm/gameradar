@@ -26,9 +26,8 @@ from playwright.async_api import async_playwright, Browser, Page, ProxySettings,
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from loguru import logger
 
-from models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
-from supabase_client import SupabaseClient
-from config import settings
+from core.models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
+from core.config import settings
 
 
 class ChinaProxyRotator:
@@ -161,7 +160,7 @@ class BaseRegionalConnector(ABC):
         """
         self.use_proxy = use_proxy
         self.browser: Optional[Browser] = None
-        self.db = SupabaseClient()
+        self.db = None  # Supabase removed; persistence handled by ingest pipeline
         self.robots_checker = RobotsTxtChecker()
         self.scraped_count = 0
         self.error_count = 0
@@ -286,15 +285,8 @@ class BaseRegionalConnector(ABC):
             # Mapear a formato Bronze
             bronze_data = self._map_to_supabase_format(player_dict, source)
             
-            # Insertar en Supabase
-            self.db.insert_bronze_raw(
-                raw_data=bronze_data["raw_data"],
-                source=source,
-                source_url=bronze_data["source_url"]
-            )
-            
             self.scraped_count += 1
-            logger.success(f"✓ Insertado en Bronze: {player_profile.nickname} ({source})")
+            logger.success(f"✓ Perfil procesado en Bronze: {player_profile.nickname} ({source})")
             return True
             
         except Exception as e:

@@ -4,7 +4,7 @@ Demuestra el uso de Dak.gg y ScoreGG scrapers
 """
 import asyncio
 from loguru import logger
-from RegionalConnectors import (
+from scraping.regional_connectors import (
     DakGGConnector,
     ScoreGGConnector,
     scrape_dak_gg_players,

@@ -3,7 +3,7 @@ Utilidades para detección de país basado en banderas y servidores
 """
 from typing import Optional
 import re
-from models import CountryCode
+from core.models import CountryCode
 
 
 # Mapeo de servidores a países

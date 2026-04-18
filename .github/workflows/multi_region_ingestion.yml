@@ -47,13 +47,9 @@ jobs:
       
       - name: 🔑 Configure API Keys
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
           STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
         run: |
-          echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
-          echo "SUPABASE_KEY=$SUPABASE_KEY" >> $GITHUB_ENV
           echo "RIOT_API_KEY=$RIOT_API_KEY" >> $GITHUB_ENV
           echo "STEAM_API_KEY=$STEAM_API_KEY" >> $GITHUB_ENV
       
@@ -72,7 +68,7 @@ jobs:
             "enable_cache": true,
             "circuit_breaker_threshold": 5,
             "circuit_breaker_timeout": 60,
-            "log_to_supabase": true,
+            "log_to_supabase": false,
             "log_to_file": true,
             "log_level": "INFO"
           }
@@ -142,7 +138,7 @@ jobs:
           # Agregar directorio actual al path
           sys.path.insert(0, os.getcwd())
           
-          from MultiRegionIngestor import run_scheduled_ingestion
+          from ingestion.multi_region_ingestor import run_scheduled_ingestion
           
           async def main():
               try:

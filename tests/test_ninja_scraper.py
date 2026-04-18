@@ -17,7 +17,7 @@ async def test_stealth_browser():
     logger.info("🧪 TEST 1: Stealth Browser Configuration")
     
     try:
-        from proxy_rotator import StealthBrowser
+        from scraping.proxy_rotator import StealthBrowser
         
         browser = await StealthBrowser.create_stealth_browser(headless=True)
         page = await browser.new_page()
@@ -49,7 +49,7 @@ async def test_proxy_rotation():
     logger.info("\n🧪 TEST 2: Proxy Rotation")
     
     try:
-        from proxy_rotator import ProxyRotator
+        from scraping.proxy_rotator import ProxyRotator
         
         # Test sin proxies
         rotator = ProxyRotator(proxy_service="none")
@@ -79,7 +79,7 @@ def test_country_detection():
     logger.info("\n🧪 TEST 3: Country Detection")
     
     try:
-        from country_detector import detect_country
+        from core.country_detector import detect_country
         
         # Test casos
         test_cases = [
@@ -105,7 +105,7 @@ def test_data_validation():
     logger.info("\n🧪 TEST 4: Data Validation")
     
     try:
-        from models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
+        from core.models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
         
         # Crear perfil de prueba con Unicode
         profile = PlayerProfile(
@@ -148,7 +148,7 @@ async def test_scraper_dry_run():
     logger.info("\n🧪 TEST 5: Scraper Dry Run")
     
     try:
-        from cnn_brasil_scraper import CNNBrasilNinjaScraper
+        from scraping.cnn_brasil_scraper import CNNBrasilNinjaScraper
         
         # Crear scraper sin proxies
         scraper = CNNBrasilNinjaScraper(use_proxies=False)
@@ -184,30 +184,9 @@ async def test_scraper_dry_run():
 
 
 def test_supabase_connection():
-    """Test 6: Verificar conexión a Supabase (opcional)"""
-    logger.info("\n🧪 TEST 6: Supabase Connection (opcional)")
-    
-    try:
-        import os
-        
-        # Verificar variables de entorno
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_KEY")
-        
-        if supabase_url and supabase_key:
-            from supabase_client import SupabaseClient
-            
-            db = SupabaseClient()
-            logger.success("✓ Cliente de Supabase inicializado")
-            
-            # Intentar una query simple (opcional)
-            # players = db.get_players_by_country("KR", limit=1)
-            # logger.info(f"Test query ejecutada: {len(players)} resultados")
-        else:
-            logger.info("⚠ Supabase no configurado (OK para testing local)")
-        
-    except Exception as e:
-        logger.warning(f"⚠ Supabase no disponible: {e}")
+    """Test 6: compatibilidad tras eliminar Supabase"""
+    logger.info("\n🧪 TEST 6: Storage backend")
+    logger.info("✓ Supabase fue eliminado; la persistencia la maneja el pipeline local")
 
 
 async def run_all_tests():

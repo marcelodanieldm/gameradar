@@ -10,17 +10,9 @@ class Settings(BaseSettings):
     """Configuración global de la aplicación"""
     model_config = ConfigDict(
         env_file=".env",
-        case_sensitive=False
+        case_sensitive=False,
+        extra="ignore"
     )
-    
-    # Supabase (opcional - usa modo local si no está configurado)
-    supabase_url: str = "http://localhost:54321"
-    supabase_key: str = "local-mock-key"
-    
-    # Airtable (opcional)
-    airtable_api_key: str = "local-mock-key"
-    airtable_base_id: str = "local-mock-base"
-    airtable_table_name: str = "GameRadar_Players"
     
     # Scraper
     rate_limit_delay: int = 2

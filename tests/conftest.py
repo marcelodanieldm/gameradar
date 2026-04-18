@@ -3,8 +3,13 @@
 # Configuración centralizada para tests E2E
 # ============================================================
 
+import pathlib
+import sys
+
 from playwright.sync_api import Playwright, sync_playwright
 import pytest
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 def pytest_configure(config):
     """Configuración global de pytest para Playwright"""
@@ -33,8 +38,3 @@ NAVIGATION_TIMEOUT = 60000  # 60 segundos para navegación
 # URLs
 FRONTEND_URL = "http://localhost:3000"
 API_URL = "http://localhost:8000"
-
-# Supabase (leer de .env en producción)
-import os
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")

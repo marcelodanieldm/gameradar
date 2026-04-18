@@ -10,7 +10,7 @@ import asyncio
 from typing import List, Dict, Optional, Any
 from loguru import logger
 from datetime import datetime, timezone
-from models import PlayerProfile
+from core.models import PlayerProfile
 
 
 class RiotAPIClient:

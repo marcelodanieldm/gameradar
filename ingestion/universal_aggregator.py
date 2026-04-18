@@ -37,9 +37,8 @@ from tenacity import (
     before_sleep_log
 )
 
-from models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
-from supabase_client import SupabaseClient
-from config import settings
+from core.models import PlayerProfile, PlayerStats, Champion, GameTitle, CountryCode
+from core.config import settings
 
 
 # ============================================================================
@@ -826,18 +825,8 @@ class UniversalAggregator:
         Returns:
             True si tuvo éxito
         """
-        try:
-            db = SupabaseClient()
-            db.insert_bronze_raw(
-                raw_data=player_data,
-                source=player_data.get("source", "universal_aggregator"),
-                source_url=player_data.get("profile_url", "")
-            )
-            logger.success(f"💾 Insertado en Bronze: {player_data.get('nickname')}")
-            return True
-        except Exception as e:
-            logger.error(f"❌ Error insertando en Bronze: {e}")
-            return False
+        logger.debug("insert_to_bronze_supabase: Supabase removed — persistence handled by ingest pipeline")
+        return False
     
     def get_global_metrics(self) -> Dict[str, Any]:
         """Obtiene métricas globales del agregador"""

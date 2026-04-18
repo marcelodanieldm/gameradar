@@ -4,7 +4,7 @@ Demuestra el uso del sistema de adapters con fallback automático
 """
 import asyncio
 from loguru import logger
-from UniversalAggregator import (
+from ingestion.universal_aggregator import (
     UniversalAggregator,
     AdapterFactory,
     fetch_player_with_fallback,

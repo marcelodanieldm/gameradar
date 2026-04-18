@@ -24,7 +24,7 @@ from loguru import logger
 import json
 
 # Imports locales
-from StrategicAdapters import (
+from scraping.strategic_adapters import (
     BaseStrategicAdapter,
     StrategicAdapterFactory,
     RegionProfile,
@@ -36,19 +36,14 @@ from StrategicAdapters import (
     LootBetAdapter,
     RiotGamesShardAdapter
 )
-from UniversalAggregator import (
+from ingestion.universal_aggregator import (
     UniversalAggregator,
     CircuitBreaker,
     SimpleCache
 )
 
-# Intentar importar supabase_client
-try:
-    from supabase_client import SupabaseClient
-    SUPABASE_AVAILABLE = True
-except ImportError:
-    SUPABASE_AVAILABLE = False
-    logger.warning("⚠️ Supabase client not available - logging to file only")
+# Supabase removed — logging to file only
+SUPABASE_AVAILABLE = False
 
 
 # ============================================================================
@@ -83,7 +78,7 @@ class IngestionConfig:
     circuit_breaker_timeout: int = 60
     
     # Logging
-    log_to_supabase: bool = True
+    log_to_supabase: bool = False
     log_to_file: bool = True
     log_level: str = "INFO"
     
@@ -250,13 +245,8 @@ class MultiRegionIngestor:
         # Cache compartido
         self.cache = SimpleCache(ttl_seconds=self.config.cache_ttl) if self.config.enable_cache else None
         
-        # Supabase client para logging
+        # Supabase removido; se conserva el atributo para compatibilidad interna.
         self.supabase_client = None
-        if SUPABASE_AVAILABLE and self.config.log_to_supabase:
-            try:
-                self.supabase_client = SupabaseClient()
-            except Exception as e:
-                logger.warning(f"⚠️ No se pudo inicializar Supabase: {e}")
         
         # Métricas
         self.session_metrics: Dict[str, Any] = {
@@ -407,9 +397,7 @@ class MultiRegionIngestor:
                     self.session_metrics["total_successes"] += 1
                     self.session_metrics["total_requests"] += 1
                     
-                    # Insertar en Bronze
-                    if self.supabase_client:
-                        await self._insert_to_bronze(data)
+                    await self._insert_to_bronze(data)
                     
                     result = IngestionResult(
                         player_identifier=identifier,
@@ -479,23 +467,8 @@ class MultiRegionIngestor:
         return None
     
     async def _insert_to_bronze(self, data: Dict[str, Any]):
-        """Insertar datos en capa Bronze de Supabase"""
-        try:
-            if not self.supabase_client:
-                return
-            
-            # Insertar usando método de SupabaseClient
-            # (asume que existe método insert_bronze_player)
-            if hasattr(self.supabase_client, 'insert_bronze_player'):
-                self.supabase_client.insert_bronze_player(data)
-                logger.debug(f"📦 Inserted to Bronze: {data.get('nickname')}")
-            else:
-                # Fallback: insertar directo
-                self.supabase_client.supabase.table("bronze_players").insert(data).execute()
-                logger.debug(f"📦 Inserted to Bronze (direct): {data.get('nickname')}")
-        
-        except Exception as e:
-            logger.error(f"❌ Error inserting to Bronze: {e}")
+        """Persistencia desacoplada: la escribe el pipeline local cuando corresponde."""
+        logger.debug(f"📦 Bronze persistence delegated for: {data.get('nickname')}")
     
     async def ingest_players_batch(
         self,
@@ -591,36 +564,14 @@ class MultiRegionIngestor:
         logger.info(f"   Fallbacks: {report.total_fallbacks}")
         logger.info(f"   Duration: {report.duration_seconds:.2f}s")
         
-        # Guardar reporte en Supabase
-        if self.supabase_client and self.config.log_to_supabase:
+        if self.config.log_to_supabase:
             await self._log_report_to_supabase(report)
         
         return report
     
     async def _log_report_to_supabase(self, report: IngestionReport):
-        """Guardar reporte de ingesta en Supabase"""
-        try:
-            # Crear tabla para logs si no existe
-            log_entry = {
-                "session_id": report.session_id,
-                "start_time": report.start_time.isoformat(),
-                "end_time": report.end_time.isoformat(),
-                "duration_seconds": report.duration_seconds,
-                "total_players": report.total_players,
-                "successful": report.successful_ingestions,
-                "failed": report.failed_ingestions,
-                "success_rate": report.success_rate,
-                "total_fallbacks": report.total_fallbacks,
-                "source_metrics": report.source_metrics,
-                "errors": report.errors[:10],  # Limitar
-                "created_at": datetime.utcnow().isoformat()
-            }
-            
-            self.supabase_client.supabase.table("ingestion_logs").insert(log_entry).execute()
-            logger.debug(f"📝 Logged report to Supabase: {report.session_id}")
-            
-        except Exception as e:
-            logger.error(f"❌ Error logging report to Supabase: {e}")
+        """Compatibilidad: el reporte ya no se guarda en Supabase."""
+        logger.debug(f"📝 Report logging skipped for session: {report.session_id}")
     
     async def ingest_by_region_priority(
         self,

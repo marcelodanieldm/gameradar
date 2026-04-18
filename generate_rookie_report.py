@@ -37,7 +37,7 @@ from loguru import logger
 
 # ── Optional: intelligence.py (scoring + translation) ─────────────────────────
 try:
-    import intelligence as intel
+    from etl import intelligence as intel
     INTEL_OK = True
 except ImportError:
     INTEL_OK = False

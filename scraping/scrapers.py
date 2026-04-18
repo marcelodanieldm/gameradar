@@ -9,9 +9,9 @@ from playwright.async_api import async_playwright, Browser, Page
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from models import PlayerProfile, GameTitle, CountryCode, Champion, PlayerStats
-from country_detector import detect_country
-from config import settings
+from core.models import PlayerProfile, GameTitle, CountryCode, Champion, PlayerStats
+from core.country_detector import detect_country
+from core.config import settings
 
 
 class BaseScraper(ABC):
